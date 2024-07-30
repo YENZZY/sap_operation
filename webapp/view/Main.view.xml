@@ -5,7 +5,9 @@
     xmlns:core="sap.ui.core"
     xmlns="sap.m"
     xmlns:f="sap.f"
-    xmlns:fb="sap.ui.comp.filterbar">
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:u="sap.ui.unified"
+    >
     <Page id="page" title="{i18n>title}">
         <f:DynamicPage showFooter="true">
             <f:title>
@@ -22,17 +24,17 @@
                             <fb:filterGroupItems>
                                 <fb:FilterGroupItem name="Plant" label="플랜트" groupName="Group1" visibleInFilterBar="true">
                                     <fb:control>
-                                        <MultiInput width="15rem" id="VHPlant" valueHelpRequest="onValueHelpPlant"/>
+                                        <MultiInput width="15rem" id="VHPlant" valueHelpRequest="onValueHelps"/>
                                     </fb:control>
                                 </fb:FilterGroupItem>
                                 <fb:FilterGroupItem name="OperationCode" label="공정코드" groupName="Group2" visibleInFilterBar="true">
                                     <fb:control>
-                                        <MultiInput width="15rem" id="VHOpCode" valueHelpRequest="onValueHelpOpCode"/>
+                                        <MultiInput width="15rem" id="VHOpCode" valueHelpRequest="onValueHelps"/>
                                     </fb:control>
                                 </fb:FilterGroupItem>
                                 <fb:FilterGroupItem name="WorkCenter" label="작업장" groupName="Group3" visibleInFilterBar="true">
                                     <fb:control>
-                                        <MultiInput width="15rem" id="VHWC" valueHelpRequest="onValueHelpWC"/>
+                                        <MultiInput width="15rem" id="VHWC" valueHelpRequest="onValueHelps"/>
                                     </fb:control>
                                 </fb:FilterGroupItem>
                             </fb:filterGroupItems>
@@ -49,7 +51,8 @@
                                 <ToolbarSpacer/>
                                 <Button id="add" text="+" press="onAdd"/>
                                 <Button id="delete" text="삭제" press="onDelete"/>
-                                <Button id="upload" text="업로드" press="onUpload"/>
+                                <u:FileUploader id="FileUploaderId" sameFilenameAllowed="true" iconOnly="false" buttonOnly="true" buttonText="업로드" fileType="XLSX,xlsx"
+								change="onUpload"/>
                                 <Button id="download" text="다운로드" press="onDownload"/>
                             </content>
                         </OverflowToolbar>
@@ -75,9 +78,9 @@
                         <ColumnListItem vAlign="Middle" type="Navigation">
                             <cells>
                                 <Text text="{dataModel>Plant}" wrapping="false"/>
-                                <MultiInput id="operationid" valueHelpRequest=".onValueHelpRequested" value="{dataModel>OperationStandardTextCode}"/>
+                                <MultiInput id="operationid" valueHelpRequest=".onValueHelpRequested" value="{dataModel>operationid}"/>
                                 <Text text="{dataModel>OperationStandardTextCodeName}" wrapping="false"/>
-                                <MultiInput id="workcenter" valueHelpRequest="onValueHelpWC" value="{dataModel>WorkCenter}"/>
+                                <MultiInput id="workcenter" valueHelpRequest="onValueHelpWC" value="{dataModel>Workcenter}"/>
                                 <Text text="{dataModel>WorkCenterText}" wrapping="false"/>
                             </cells>
                         </ColumnListItem>
@@ -87,8 +90,8 @@
             <f:footer>
                 <OverflowToolbar>
                     <ToolbarSpacer/>
-                    <Button type="Emphasized" text="저장"/>
-                    <Button type="Ghost" text="취소"/>
+                    <Button type="Emphasized" text="저장" press="onSave"/>
+                    <Button type="Ghost" text="취소" press="onCancel"/>
                 </OverflowToolbar>
             </f:footer>
         </f:DynamicPage>

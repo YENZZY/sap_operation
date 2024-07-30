@@ -5,37 +5,41 @@ sap.ui.define([
     "sap/ui/comp/valuehelpdialog/ValueHelpDialog",
     'sap/m/Token',
     'sap/ui/model/Filter',
-	'sap/ui/model/FilterOperator',
-    "sap/ui/core/library",
+    'sap/ui/model/FilterOperator',
+    "sap/ui/export/library",
     "sap/m/ColumnListItem",
     "sap/m/Label",
     "sap/m/Column",
     "sap/ui/table/Column",
-    'sap/m/Text'
-],
-function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, FilterOperator, coreLibrary, ColumnListItem, Label, MColumn, UIColumn, Text) {
+    'sap/m/Text',
+    "sap/ui/export/Spreadsheet"
+], function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet) {
     "use strict";
+
+    var EdmType = exportLibrary.EdmType;
 
     return Controller.extend("operation.controller.Main", {
         onInit: function () {
             this.getRouter().getRoute("Main").attachMatched(this._onRouteMatched, this);
 
-              //value help 초기 설정
-              var oMultiInput;
-              oMultiInput = this.byId("VHWC");
-              this._oMultiInput = oMultiInput;
-              this._oMultiInput.setTokens([]);
-              
-              var oMultiInput1 = this.byId("VHPlant");
-              this._oMultiInput1 = oMultiInput1;
-  
-              // 비동기적으로 토큰을 설정
-              this._getDefaultTokens().then(function (aTokens) {
-                  oMultiInput1.setTokens(aTokens);
-              }).catch(function (oError) {
-                  MessageBox.error("토큰 설정 중 오류가 발생했습니다.");
-              });
-          },
+            this.MultiInputs("VHWC");
+            this.MultiInputs("VHPlant", true);
+
+        },
+
+        // MultiInput 초기화 및 토큰 설정
+        MultiInputs: function (sMultiInputId, bSetDefaultTokens) {
+            var oMultiInput = this.byId(sMultiInputId);
+            oMultiInput.setTokens([]);
+
+            if (bSetDefaultTokens) {
+                this._getDefaultTokens(sMultiInputId).then(function (aTokens) {
+                    oMultiInput.setTokens(aTokens);
+                }).catch(function (oError) {
+                    MessageBox.error("토큰 설정 중 오류가 발생했습니다.");
+                });
+            }
+        },
 
         _onRouteMatched: function () {
             this._getData();
@@ -45,29 +49,24 @@ function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, Fil
             var oMainModel = this.getOwnerComponent().getModel(); // 메인 모델 가져오기
 
             this._getODataRead(oMainModel, "/Operationcd").done(
-                
                 function(aGetData){
-                
-                // 데이터 읽기 성공 시 JSON 모델로 설정 , JSON 모델 객체를 생성한 후, 이 데이터를 모델에 설정
-                this.setModel(new JSONModel(aGetData), "dataModel")
-                
-                // 데이터 읽기 실패 시 메시지 박스 표시
-            }.bind(this)).fail(function(){
+                    // 데이터 읽기 성공 시 JSON 모델로 설정
+                    this.setModel(new JSONModel({ Items: aGetData }), "dataModel");
+                }.bind(this)
+            ).fail(function(){
                 MessageBox.information("Read Fail");
-            }).always(function(){
-                // 항상 실행되는 코드
             });
         },
 
         // 데이터 추가 버튼 +
         onAdd: function () {
             var oMainModel = this.getOwnerComponent().getModel();
-        
+
             // OData 모델에서 플랜트 데이터를 읽어옴
             this._getODataRead(oMainModel, "/Plant").done(
                 function (aPlantData) {
                     var sPlant = aPlantData.length > 0 ? aPlantData[0].Plant : "";
-        
+
                     var oItem = {
                         Plant: sPlant,
                         OperationStandardTextCode: "",
@@ -75,14 +74,14 @@ function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, Fil
                         WorkCenter: "",
                         WorkCenterText: ""
                     };
-        
+
                     // dataModel에서 기존 데이터를 가져옴
                     var oDataModel = this.getView().getModel("dataModel");
                     var aItems = oDataModel.getProperty("/Items") || [];
-        
+
                     // 새로운 행 추가
                     aItems.push(oItem);
-        
+
                     oDataModel.setProperty("/Items", aItems);
                 }.bind(this)
             ).fail(function () {
@@ -90,7 +89,118 @@ function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, Fil
             });
         },
 
-        //업로드
+        // 데이터 삭제 버튼
+        onDelete: function () {
+            var oTable = this.byId("dataTable");
+            var aSelectedItems = oTable.getSelectedItems(); // 선택된 항목을 가져오기
+            var oDataModel = this.getModel("dataModel");
+            var aData = oDataModel.getProperty("/Items");
+        
+            if (aSelectedItems.length === 0) {
+                MessageBox.information("선택한 항목이 없습니다.");
+                return;
+            }
+        
+            // 삭제할 항목 배열 생성
+            if (!this.aItemsToDelete) {
+                this.aItemsToDelete = [];
+            }
+        
+            // 선택된 항목의 데이터를 aItemsToDelete 배열에 추가
+            aSelectedItems.forEach(function (oItem) {
+                var oContext = oItem.getBindingContext("dataModel");
+                var oRowData = oContext.getObject();
+                this.aItemsToDelete.push(oRowData);
+            }.bind(this));
+        
+            // 선택된 항목을 모델 데이터에서 제거
+            aSelectedItems.reverse().forEach(function (oItem) {
+                var oContext = oItem.getBindingContext("dataModel");
+                var iIndex = oContext.getPath().split('/').pop(); // 인덱스를 계산
+                aData.splice(iIndex, 1);
+            });
+        
+            // 모델의 데이터 업데이트
+            oDataModel.setProperty("/Items", aData);
+        
+            // 모델 새로고침
+            oDataModel.refresh();
+            
+            // 선택 해제
+            oTable.removeSelections(true);
+        },        
+        
+
+        // 푸터 - 취소 버튼
+        
+        // 엑셀 다운로드
+        onDownload: function () {
+            var aCols, oRowBinding, oSettings, oSheet, oTable;
+            var aData = []; // 데이터가 없는 경우 템플릿으로 사용할 빈 데이터 배열
+        
+            // 테이블 객체가 이미 존재하지 않으면 가져옴
+            if (!this._oTable) {
+                this._oTable = this.byId('dataTable');
+            }
+        
+            // 테이블과 바인딩을 가져옴
+            oTable = this._oTable;
+            oRowBinding = oTable.getBinding('items');
+        
+            // 컬럼 설정을 생성
+            aCols = this.createColumnConfig();
+        
+            // 데이터가 있는지 확인
+            if (oRowBinding.getLength() > 0) {
+                // 데이터가 있는 경우, 데이터 바인딩을 가져옴
+                oSettings = {
+                    workbook: {
+                        columns: aCols,
+                        hierarchyLevel: 'Level' // 계층 구조 레벨 설정
+                    },
+                    dataSource: oRowBinding, // 데이터 소스 설정
+                    fileName: '다인정공_공정 기준 정보.xlsx', // 다운로드 파일 이름 설정
+                    worker: false // 워커 사용 여부 (테이블 안 보이게)
+                };
+            } else {
+                // 데이터가 없는 경우, 빈 데이터 배열을 사용하여 템플릿 다운로드
+                oSettings = {
+                    workbook: {
+                        columns: aCols,
+                        hierarchyLevel: 'Level' // 계층 구조 레벨 설정
+                    },
+                    dataSource: aData, // 빈 데이터 배열
+                    fileName: '다인정공_공정 기준 정보_템플릿.xlsx', // 다운로드 파일 이름 설정
+                    worker: false // 워커 사용 여부 (테이블 안 보이게)
+                };
+            }
+        
+            // 엑셀 파일을 생성하고 다운로드
+            oSheet = new Spreadsheet(oSettings);
+            oSheet.build().finally(function() {
+                oSheet.destroy();
+            });
+        },
+        
+        // 엑셀파일로 데이터 내보내기
+        createColumnConfig: function() {
+            var aCols = [];
+            // 컬럼 라벨과 속성을 정의
+            var labels = ['플랜트', '공정코드', '공정명', '작업장', '작업장명'];
+            var properties = ['Plant', 'Operationid', 'OperationStandardTextCodeName', 'Workcenter', 'WorkCenterText'];
+        
+            // 라벨과 속성을 매핑하여 컬럼 설정 배열을 생성
+            labels.forEach(function (label, index) {
+                aCols.push({
+                    label: label,
+                    property: properties[index],
+                    type: EdmType.String
+                });
+            });
+            return aCols; // 컬럼 설정 배열 반환
+        },        
+
+        //엑셀 업로드
         onUpload: function (e) {
             var file = e.getParameter("files") && e.getParameter("files")[0];
             if (file) {
@@ -99,10 +209,9 @@ function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, Fil
                 MessageBox.error("파일을 선택하세요.");
             }
         },
-    
+        
         _import: function (file) {
-            var that = this;
-            var excelData = {};
+            var oMainModel = this.getOwnerComponent().getModel();
             if (file && window.FileReader) {
                 var reader = new FileReader();
                 reader.onload = function (e) {
@@ -111,83 +220,71 @@ function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, Fil
                         type: 'binary'
                     });
                     workbook.SheetNames.forEach(function (sheetName) {
-                        excelData = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
-
-                        excelData.splice(0, 3);
+                        var excelData = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
                         console.log(excelData);
-                        // 데이터 처리
-                        var mappingIds = new Set();
-                        var records = {};
         
-                        excelData.forEach(function(row) {
-                            var key = row.CnsldtnCOA + '|' + row.MappingID + '|' + row.Revision + '|' + row.CnsldtnUnit;
-                            
-                            if (!records[key]) {
-                                records[key] = {
-                                    'CnsldtnCOA': row.CnsldtnCOA,
-                                    'MappingID': row.MappingID,
-                                    'Revision': row.Revision,
-                                    'CnsldtnUnit': row.CnsldtnUnit,
-                                    'GrStatus': 0,
-                                    items: []
+                        // 필드 값을 추출하기 전에 Plant 값을 가져오기
+                        this._getODataRead(oMainModel, "/Plant").done(function (aPlantData) {
+                            var sPlant =aPlantData[0].Plant;
+        
+                            // 필드 값 추출 및 Plant 값 추가
+                            var filteredData = excelData.map(function (row) {
+                                return {
+                                    Plant: sPlant, // Plant 값을 추가
+                                    Operationid: row["공정코드"] || row["Operationid"],
+                                    Workcenter: row["작업장"] || row["Workcenter"]
                                 };
-                            }
-                            
-                            records[key].items.push({
-                                'GLAccount': row.GLAccount,
-                                'GLAccountLocalText': row.GLAccountLocalText,
-                                'CnsldtnFSItem': row.CnsldtnFSItem,
-                                'CnsldtnFSItemText': row.CnsldtnFSItemText
                             });
-
-                            mappingIds.add(row.MappingID);
+        
+                            console.log(filteredData);
+        
+                            // OData 생성 요청
+                            filteredData.forEach(function (oData) {
+                                this._getODataCreate(oMainModel, "/Operationcd", oData).fail(function () {
+                                    MessageBox.information("생성에 실패하였습니다.");
+                                });
+                            }.bind(this));
+        
+                            // 데이터 갱신
+                            this._getData();
+                        }.bind(this)).fail(function () {
+                            MessageBox.information("플랜트 데이터를 불러오는데 실패했습니다.");
                         });
         
-                        // 객체를 배열로 변환
-                        excelData = Object.values(records);
-                        console.log(excelData);
-                        that.setModel(new JSONModel(excelData), 'excelModel');
-
-                        var uniqueMappingIds = Array.from(mappingIds);
-                        console.log(uniqueMappingIds);
-
-                    });
-
-                    // excelData.map( importData => {
-                        //     var oMainModel = that.getOwnerComponent().getModel();
-                        //     that.getOdataCreate(oMainModel, importData)
-
-                        // })
-
-                };
+                    }.bind(this)); // this를 유지하기 위해 bind 사용
+                }.bind(this); // this를 유지하기 위해 bind 사용
                 reader.onerror = function (ex) {
                     console.log(ex);
                 };
                 reader.readAsBinaryString(file);
             }
         },
-        
-        // 플랜트 필터 조회 (ValueHelpDialog)
-        onValueHelpPlant: function () {
+        // 공통 다이얼로그 및 테이블 설정 함수
+        _createValueHelpDialog: function (sTitle, sKey, aColumns, aItems, sMultiInputId) {
             var oDialog = new ValueHelpDialog({
-                title: "플랜트 조회",
+                title: sTitle,
                 supportMultiselect: true,
-                key: "Plant",
-                // descriptionKey: "WorkCenterText",
+                key: sKey,
                 ok: function (oEvent) {
-                    this.onValueHelpOkPress(oEvent);
+                    this.onValueHelpOkPress(oEvent, sMultiInputId);
                 }.bind(this),
                 cancel: function () {
                     this.onValueHelpCancelPress();
-                }.bind(this)
+                }.bind(this),
+                afterClose: this.onValueHelpAfterClose.bind(this)
             });
-
+        
             this._oVHD = oDialog;
             this.getView().addDependent(oDialog);
-
+        
+            // MultiInput에 설정된 기존 토큰들을 다이얼로그에 설정
+            var oMultiInput = this.byId(sMultiInputId);
+            oDialog.setTokens(oMultiInput.getTokens());
+        
             oDialog.getTableAsync().then(function (oTable) {
                 oTable.setModel(this.valueModel);
-
+        
+                // Check for binding type and bind accordingly
                 if (oTable.bindRows) {
                     oTable.bindAggregation("rows", {
                         path: "/",
@@ -197,22 +294,16 @@ function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, Fil
                             }
                         }
                     });
-                    var oColumnPlant = new UIColumn({
-                        label: new Label({ text: "플랜트" }),
-                        template: new Text({ text: "{Plant}" })
+                    aColumns.forEach(function (oColumn) {
+                        oTable.addColumn(oColumn);
                     });
-                    oColumnPlant.data("fieldName", "Plant");
-
-                    oTable.addColumn(oColumnPlant);
                 }
-
-                 if (oTable.bindItems) {
+        
+                if (oTable.bindItems) {
                     oTable.bindAggregation("items", {
                         path: "/",
                         template: new ColumnListItem({
-                            cells: [
-                                new Label({ text: "{Plant}" })
-                            ]
+                            cells: aItems
                         }),
                         events: {
                             dataReceived: function () {
@@ -220,19 +311,41 @@ function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, Fil
                             }
                         }
                     });
-                    oTable.addColumn(new MColumn({ header: new Label({ text: "플랜트" }) }));
-
+                    aColumns.forEach(function (oColumn) {
+                        oTable.addColumn(oColumn);
+                    });
                 }
-
+        
                 oDialog.update();
-            }.bind(this));
-
-            oDialog.setTokens(this._oMultiInput1.getTokens());
-            this.getPlantData();
+            }.bind(this)).catch(function (oError) {
+                console.error("테이블 로딩에 문제가 생겼습니다.", oError);
+            });
+        
             oDialog.open();
+        },        
+
+        // OK 버튼 핸들러
+        onValueHelpOkPress: function (oEvent, sMultiInputId) {
+            console.log(oEvent);
+            var aTokens = oEvent.getParameter("tokens");
+            console.log(aTokens);
+            var oMultiInput = this.byId(sMultiInputId); // 선택된 MultiInput 필드 가져오기
+            oMultiInput.setTokens(aTokens);
+            this._oVHD.close();
         },
 
-        _getDefaultTokens: function () {
+        // Cancel 버튼 핸들러
+        onValueHelpCancelPress: function () {
+            this._oVHD.close();
+        },
+
+        // 다이얼로그가 닫힌 후 호출
+        onValueHelpAfterClose: function () {
+            this._oVHD.destroy();
+        },
+
+        // 플랜트  default 값
+        _getDefaultTokens: function (sMultiInputId) {
             var oMainModel = this.getOwnerComponent().getModel();
 
             // 비동기 OData 읽기 작업을 수행하는 함수
@@ -253,137 +366,86 @@ function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, Fil
                 throw oError;
             });
         },
-        
-        // 작업장 필터 조회 (ValueHelpDialog)
-        onValueHelpWC: function () {
-            var oDialog = new ValueHelpDialog({
-                title: "작업장 조회",
-                supportMultiselect: true,
-                key: "WorkCenter",
-                descriptionKey: "WorkCenterText",
-                ok: function (oEvent) {
-                    this.onValueHelpOkPress(oEvent);
-                }.bind(this),
-                cancel: function () {
-                    this.onValueHelpCancelPress();
-                }.bind(this)
-            });
 
-            this._oVHD = oDialog;
-            this.getView().addDependent(oDialog);
-
-            oDialog.getTableAsync().then(function (oTable) {
-                oTable.setModel(this.valueModel);
-
-                if (oTable.bindRows) {
-                    oTable.bindAggregation("rows", {
-                        path: "/",
-                        events: {
-                            dataReceived: function () {
-                                oDialog.update();
-                            }
-                        }
-                    });
-                    var oColumnWorkCenterCategoryCode = new UIColumn({
-                        label: new Label({ text: "범주" }),
-                        template: new Text({ text: "{WorkCenterCategoryCode}" })
-                    });
-                    oColumnWorkCenterCategoryCode.data("fieldName", "WorkCenterCategoryCode");
-
-                    var oColumnPlant = new UIColumn({
+        onValueHelps: function (oEvent) {
+            var sMultiInputId = oEvent.getSource().getId(); // 이벤트 소스의 ID를 가져오기
+          
+            if (sMultiInputId === this.byId("VHPlant").getId()) {
+                var aColumns = [
+                    new UIColumn({
                         label: new Label({ text: "플랜트" }),
                         template: new Text({ text: "{Plant}" })
-                    });
-                    oColumnPlant.data("fieldName", "Plant");
+                    })
+                ];
+                
+                var aItems = [
+                    new Label({ text: "{Plant}" })
+                ];
+                
+                this._createValueHelpDialog("플랜트 조회", "Plant", aColumns, aItems, "VHPlant");
+                this.getPlantData();
+                
+            } else if (sMultiInputId === this.byId("VHOpCode").getId()) {
+                var aColumns = [
+                    new UIColumn({
+                        label: new Label({text: "공정코드"}),
+                        template: new Text({ text: "{OperationStandardTextCode}" })
+                    }),
+                    new UIColumn({
+                        label: new Label({text: "공정내역"}),
+                        template: new Text({ text: "{OperationStandardTextCodeName}" })
+                    }),
+                ];
+                var aItems = [
+                    new Label({ text: "{OperationStandardTextCode}" }),
+                    new Label({ text: "{OperationStandardTextCodeName}" })
+                ];
+                
+                this._createValueHelpDialog("공정코드 조회", "OperationStandardTextCode", aColumns, aItems, "VHOpCode");
+                this.getOpCodeData();
 
-                    var oColumnWorkCenter = new UIColumn({
+            } else if (sMultiInputId === this.byId("VHWC").getId()) {
+                var aColumns = [
+                    new UIColumn({
+                        label: new Label({ text: "범주" }),
+                        template: new Text({ text: "{WorkCenterCategoryCode}" })
+                    }),
+                    new UIColumn({
+                        label: new Label({ text: "플랜트" }),
+                        template: new Text({ text: "{Plant}" })
+                    }),
+                    new UIColumn({
                         label: new Label({ text: "작업장" }),
                         template: new Text({ text: "{WorkCenter}" })
-                    });
-                    oColumnWorkCenter.data("fieldName", "WorkCenter");
-
-                    var oColumnWorkCenterText = new UIColumn({
+                    }),
+                    new UIColumn({
                         label: new Label({ text: "작업장명" }),
                         template: new Text({ text: "{WorkCenterText}" })
-                    });
-                    oColumnWorkCenterText.data("fieldName", "WorkCenterText");
-
-                    var oColumnLanguage = new UIColumn({
+                    }),
+                    new UIColumn({
                         label: new Label({ text: "언어" }),
                         template: new Text({ text: "{Language}" })
-                    });
-                    oColumnLanguage.data("fieldName", "Language");
+                    })
+                ];
+                
+                var aItems = [
+                    new Label({ text: "{WorkCenterCategoryCode}" }),
+                    new Label({ text: "{Plant}" }),
+                    new Label({ text: "{WorkCenter}" }),
+                    new Label({ text: "{WorkCenterText}" }),
+                    new Label({ text: "{Language}" })
+                ];
+                
+                this._createValueHelpDialog("작업장 조회", "WorkCenter", aColumns, aItems, "VHWC");
+                this.getWCData();
+            }
+        },        
 
-                    oTable.addColumn(oColumnWorkCenterCategoryCode);
-                    oTable.addColumn(oColumnPlant);
-                    oTable.addColumn(oColumnWorkCenter);
-                    oTable.addColumn(oColumnWorkCenterText);
-                    oTable.addColumn(oColumnLanguage);
-                }
-
-                 if (oTable.bindItems) {
-                    oTable.bindAggregation("items", {
-                        path: "/",
-                        template: new ColumnListItem({
-                            cells: [
-                                new Label({ text: "{WorkCenterCategoryCode}" }),
-                                new Label({ text: "{Plant}" }),
-                                new Label({ text: "{WorkCenter}" }),
-                                new Label({ text: "{WorkCenterText}" }),
-                                new Label({ text: "{Language}" })
-                            ]
-                        }),
-                        events: {
-                            dataReceived: function () {
-                                oDialog.update();
-                            }
-                        }
-                    });
-                    oTable.addColumn(new MColumn({ header: new Label({ text: "범주" }) }));
-                    oTable.addColumn(new MColumn({ header: new Label({ text: "플랜트" }) }));
-                    oTable.addColumn(new MColumn({ header: new Label({ text: "작업장" }) }));
-                    oTable.addColumn(new MColumn({ header: new Label({ text: "작업장명" }) }));
-                    oTable.addColumn(new MColumn({ header: new Label({ text: "언어" }) }));
-
-                }
-
-                oDialog.update();
-            }.bind(this));
-
-            oDialog.setTokens(this._oMultiInput.getTokens());
-            this.getWCData();
-            oDialog.open();
-        },
-
-
-        // select 버튼
-        onValueHelpOkPress: function (oEvent) {
-            // 선택된 토큰들을 가져옴
-            var aTokens = oEvent.getParameter("tokens");
-
-            // 가져온 토큰들을 _oMultiInput에 설정
-            this._oMultiInput.setTokens(aTokens);
-
-            // 다이얼로그 닫기
-            this._oVHD.close();
-        },
-
-        // cancel 버튼
-        onValueHelpCancelPress: function () {
-            // 다이얼로그 닫기
-            this._oVHD.close();
-        },
-
-        // 다이얼로그가 닫힌 후 호출
-        onValueHelpAfterClose: function () {
-            // 다이얼로그 객체 파기
-            this._oVHD.destroy();
-        },
+        // 플랜트 데이터
+        getPlantData: function () {
+            var oPlantModel = this.getOwnerComponent().getModel();
         
-        getWCData: function () {
-            var oWCModel = this.getOwnerComponent().getModel();
-        
-            this._getODataRead(oWCModel, "/Workcenter").done(
+            this._getODataRead(oPlantModel, "/Plant").done(
                 function (oData) {
                     var oTable = this._oVHD.getTable();
                     oTable.setModel(new JSONModel(oData));
@@ -397,10 +459,12 @@ function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, Fil
                 // 항상 실행되는 코드
             });
         },
-        getPlantData: function () {
-            var oPlantModel = this.getOwnerComponent().getModel();
+
+         // 작업장 데이터
+         getWCData: function () {
+            var oWCModel = this.getOwnerComponent().getModel();
         
-            this._getODataRead(oPlantModel, "/Plant").done(
+            this._getODataRead(oWCModel, "/Workcenter").done(
                 function (oData) {
                     var oTable = this._oVHD.getTable();
                     oTable.setModel(new JSONModel(oData));
