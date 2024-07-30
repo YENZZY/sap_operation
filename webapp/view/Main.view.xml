@@ -1,7 +1,96 @@
 <mvc:View controllerName="operation.controller.Main"
-    xmlns:mvc="sap.ui.core.mvc" displayBlock="true"
-    xmlns="sap.m">
+    displayBlock="true"
+    height="100%"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:fb="sap.ui.comp.filterbar">
     <Page id="page" title="{i18n>title}">
-        <content />
+        <f:DynamicPage showFooter="true">
+            <f:title>
+                <f:DynamicPageTitle>
+                    <f:heading>
+                        <Title text="{i18n>title}"/>
+                    </f:heading>
+                </f:DynamicPageTitle>
+            </f:title>
+            <f:header>
+                <f:DynamicPageHeader>
+                    <f:content>
+                        <fb:FilterBar id="filterbar" persistencyKey="myPersKey" useToolbar="false" search=".onSearch" filterChange=".onFilterChange" afterVariantLoad=".onAfterVariantLoad">
+                            <fb:filterGroupItems>
+                                <fb:FilterGroupItem name="Plant" label="플랜트" groupName="Group1" visibleInFilterBar="true">
+                                    <fb:control>
+                                        <MultiInput width="15rem" id="VHPlant" valueHelpRequest="onValueHelpPlant"/>
+                                    </fb:control>
+                                </fb:FilterGroupItem>
+                                <fb:FilterGroupItem name="OperationCode" label="공정코드" groupName="Group2" visibleInFilterBar="true">
+                                    <fb:control>
+                                        <MultiInput width="15rem" id="VHOpCode" valueHelpRequest="onValueHelpOpCode"/>
+                                    </fb:control>
+                                </fb:FilterGroupItem>
+                                <fb:FilterGroupItem name="WorkCenter" label="작업장" groupName="Group3" visibleInFilterBar="true">
+                                    <fb:control>
+                                        <MultiInput width="15rem" id="VHWC" valueHelpRequest="onValueHelpWC"/>
+                                    </fb:control>
+                                </fb:FilterGroupItem>
+                            </fb:filterGroupItems>
+                        </fb:FilterBar>
+                    </f:content>
+                </f:DynamicPageHeader>
+            </f:header>
+            <f:content>
+                <Table id="dataTable" inset="false" width="100%" mode="MultiSelect" items="{path: 'dataModel>/Items', sorter: {path: 'OperationStandardTextCode'}}">
+                    <headerToolbar>
+                        <OverflowToolbar>
+                            <content>
+                                <Title text="작업 지시" level="H2"/>
+                                <ToolbarSpacer/>
+                                <Button id="add" text="+" press="onAdd"/>
+                                <Button id="delete" text="삭제" press="onDelete"/>
+                                <Button id="upload" text="업로드" press="onUpload"/>
+                                <Button id="download" text="다운로드" press="onDownload"/>
+                            </content>
+                        </OverflowToolbar>
+                    </headerToolbar>
+                    <columns>
+                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="플랜트" wrapping="false" tooltip="플랜트"/>
+                        </Column>
+                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="공정코드" wrapping="false" tooltip="공정코드"/>
+                        </Column>
+                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="공정명" wrapping="false" tooltip="공정명"/>
+                        </Column>
+                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="작업장" wrapping="false" tooltip="작업장"/>
+                        </Column>
+                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="작업장명" wrapping="false" tooltip="작업장명"/>
+                        </Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem vAlign="Middle" type="Navigation">
+                            <cells>
+                                <Text text="{dataModel>Plant}" wrapping="false"/>
+                                <MultiInput id="operationid" valueHelpRequest=".onValueHelpRequested" value="{dataModel>OperationStandardTextCode}"/>
+                                <Text text="{dataModel>OperationStandardTextCodeName}" wrapping="false"/>
+                                <MultiInput id="workcenter" valueHelpRequest="onValueHelpWC" value="{dataModel>WorkCenter}"/>
+                                <Text text="{dataModel>WorkCenterText}" wrapping="false"/>
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </f:content>
+            <f:footer>
+                <OverflowToolbar>
+                    <ToolbarSpacer/>
+                    <Button type="Emphasized" text="저장"/>
+                    <Button type="Ghost" text="취소"/>
+                </OverflowToolbar>
+            </f:footer>
+        </f:DynamicPage>
     </Page>
 </mvc:View>

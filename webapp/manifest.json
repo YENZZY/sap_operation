@@ -28,6 +28,7 @@
     }
   },
   "sap.ui": {
+    "fullWidth" : true,
     "technology": "UI5",
     "icons": {
       "icon": "",
@@ -44,7 +45,7 @@
     }
   },
   "sap.ui5": {
-    "flexEnabled": true,
+    "flexEnabled": false,
     "dependencies": {
       "minUI5Version": "1.120.17",
       "libs": {
@@ -94,15 +95,15 @@
       },
       "routes": [
         {
-          "name": "RouteMain",
+          "name": "Main",
           "pattern": ":?query:",
           "target": [
-            "TargetMain"
+            "Main"
           ]
         }
       ],
       "targets": {
-        "TargetMain": {
+        "Main": {
           "viewType": "XML",
           "transition": "slide",
           "clearControlAggregation": false,
