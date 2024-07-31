@@ -8,7 +8,7 @@
     xmlns:fb="sap.ui.comp.filterbar"
     xmlns:u="sap.ui.unified"
     >
-    <Page id="page" title="{i18n>title}">
+    <!-- <Page id="page" title="{i18n>title}"> -->
         <f:DynamicPage showFooter="true">
             <f:title>
                 <f:DynamicPageTitle>
@@ -20,11 +20,11 @@
             <f:header>
                 <f:DynamicPageHeader>
                     <f:content>
-                        <fb:FilterBar id="filterbar" persistencyKey="myPersKey" useToolbar="false" search=".onSearch" filterChange=".onFilterChange" afterVariantLoad=".onAfterVariantLoad">
+                        <fb:FilterBar id="filterbar" persistencyKey="myPersKey" useToolbar="false" search="onSearch" filterChange="onFilterChange" afterVariantLoad="onAfterVariantLoad" class="sapUiMediumMarginBottom">
                             <fb:filterGroupItems>
                                 <fb:FilterGroupItem name="Plant" label="플랜트" groupName="Group1" visibleInFilterBar="true">
                                     <fb:control>
-                                        <MultiInput width="15rem" id="VHPlant" valueHelpRequest="onValueHelps"/>
+                                        <MultiInput width="15rem" id="VHPlant" valueHelpRequest="onValueHelps" required="true"/>
                                     </fb:control>
                                 </fb:FilterGroupItem>
                                 <fb:FilterGroupItem name="OperationCode" label="공정코드" groupName="Group2" visibleInFilterBar="true">
@@ -49,11 +49,11 @@
                             <content>
                                 <Title text="작업 지시" level="H2"/>
                                 <ToolbarSpacer/>
-                                <Button id="add" text="+" press="onAdd"/>
-                                <Button id="delete" text="삭제" press="onDelete"/>
-                                <u:FileUploader id="FileUploaderId" sameFilenameAllowed="true" iconOnly="false" buttonOnly="true" buttonText="업로드" fileType="XLSX,xlsx"
-								change="onUpload"/>
-                                <Button id="download" text="다운로드" press="onDownload"/>
+                                <Button id="add" text="+" press="onAdd" visible="false"/>
+                                <Button id="delete" text="삭제" press="onDelete" visible="false"/>
+                                <u:FileUploader id="upload" sameFilenameAllowed="true" iconOnly="false" buttonOnly="true" buttonText="업로드" fileType="XLSX,xlsx"
+								change="onUpload" visible="true"/>
+                                <Button id="download" text="다운로드" press="onDownload" visible="true"/>
                             </content>
                         </OverflowToolbar>
                     </headerToolbar>
@@ -78,9 +78,9 @@
                         <ColumnListItem vAlign="Middle" type="Navigation">
                             <cells>
                                 <Text text="{dataModel>Plant}" wrapping="false"/>
-                                <MultiInput id="operationid" valueHelpRequest=".onValueHelpRequested" value="{dataModel>operationid}"/>
+                                <MultiInput id="operationid" valueHelpRequest="onValueHelps" value="{dataModel>Operationid}" editable="false"/>
                                 <Text text="{dataModel>OperationStandardTextCodeName}" wrapping="false"/>
-                                <MultiInput id="workcenter" valueHelpRequest="onValueHelpWC" value="{dataModel>Workcenter}"/>
+                                <MultiInput id="workcenter" valueHelpRequest="onValueHelps" value="{dataModel>Workcenter}" editable="false"/>
                                 <Text text="{dataModel>WorkCenterText}" wrapping="false"/>
                             </cells>
                         </ColumnListItem>
@@ -90,10 +90,11 @@
             <f:footer>
                 <OverflowToolbar>
                     <ToolbarSpacer/>
-                    <Button type="Emphasized" text="저장" press="onSave"/>
+                    <Button id="btnEdit" type="Emphasized" text="수정" press="onEdit" visible="true"/>
+                    <Button id="btnSave" type="Emphasized" text="저장" press="onSave" visible="false"/>
                     <Button type="Ghost" text="취소" press="onCancel"/>
                 </OverflowToolbar>
             </f:footer>
         </f:DynamicPage>
-    </Page>
+    <!-- </Page> -->
 </mvc:View>
