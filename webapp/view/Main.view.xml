@@ -49,11 +49,11 @@
                             <content>
                                 <Title text="작업 지시" level="H2"/>
                                 <ToolbarSpacer/>
-                                <Button id="add" text="+" press="onAdd" visible="false"/>
-                                <Button id="delete" text="삭제" press="onDelete" visible="false"/>
+                                <Button id="add" text="+" press="onAdd" visible="{changeModel>/visibleEdit}"/>
+                                <Button id="delete" text="삭제" press="onDelete" visible="{changeModel>/visibleEdit}"/>
                                 <u:FileUploader id="upload" sameFilenameAllowed="true" iconOnly="false" buttonOnly="true" buttonText="업로드" fileType="XLSX,xlsx"
-								change="onUpload" visible="true"/>
-                                <Button id="download" text="다운로드" press="onDownload" visible="true"/>
+								change="onUpload" visible="{changeModel>/visibleGet}"/>
+                                <Button id="download" text="다운로드" press="onDownload" visible="{changeModel>/visibleGet}"/>
                             </content>
                         </OverflowToolbar>
                     </headerToolbar>
@@ -78,9 +78,9 @@
                         <ColumnListItem vAlign="Middle" type="Navigation">
                             <cells>
                                 <Text text="{dataModel>Plant}" wrapping="false"/>
-                                <MultiInput id="operationid" valueHelpRequest="onValueHelps" value="{dataModel>Operationid}" editable="false"/>
+                                <MultiInput id="operationid" valueHelpRequest="onValueHelps" value="{dataModel>Operationid}" editable="{changeModel>/editable}"/>
                                 <Text text="{dataModel>OperationStandardTextCodeName}" wrapping="false"/>
-                                <MultiInput id="workcenter" valueHelpRequest="onValueHelps" value="{dataModel>Workcenter}" editable="false"/>
+                                <MultiInput id="workcenter" valueHelpRequest="onValueHelps" value="{dataModel>Workcenter}" editable="{changeModel>/editable}"/>
                                 <Text text="{dataModel>WorkCenterText}" wrapping="false"/>
                             </cells>
                         </ColumnListItem>
@@ -90,8 +90,7 @@
             <f:footer>
                 <OverflowToolbar>
                     <ToolbarSpacer/>
-                    <Button id="btnEdit" type="Emphasized" text="수정" press="onEdit" visible="true"/>
-                    <Button id="btnSave" type="Emphasized" text="저장" press="onSave" visible="false"/>
+                    <Button id="btnSave" type="Emphasized" text="{changeModel>/buttonText}" press="onSave"/>
                     <Button type="Ghost" text="취소" press="onCancel"/>
                 </OverflowToolbar>
             </f:footer>

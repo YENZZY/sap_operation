@@ -21,6 +21,7 @@ sap.ui.define([
     return Controller.extend("operation.controller.Main", {
         onInit: function () {
             this.getRouter().getRoute("Main").attachMatched(this._onRouteMatched, this);
+            this._setModel(); 
 
         },
 
@@ -39,7 +40,7 @@ sap.ui.define([
                     this.MultiInputs("VHPlant", true); //필터_플랜트
                     this.MultiInputs("operationid") // 테이블_공정코드
                     this.MultiInputs("workcenter") // 테이블_작업장
-                    this.ResetBtn();    
+                      
                 }.bind(this)
             ).fail(function() {
                 MessageBox.information("테이블 데이터를 읽어올 수 없습니다.");
@@ -47,12 +48,47 @@ sap.ui.define([
            
         },        
 
+        // 메인 화면 visible editable 변경 모델
+        _setModel: function () {
+            var oChangeModel = new JSONModel({
+                editable: false,
+                visibleEdit: false, // 수정 버튼 눌렀을 때 보이는 버튼: 추가, 삭제
+                visibleGet: true,   // 조회 화면에서 보이는 버튼: 업로드, 다운로드
+                buttonText: "수정"
+            });
+            this.getView().setModel(oChangeModel, "changeModel");
+        },
+
+        // 버튼 및 텍스트 변경 (수정/ 저장)
+        toggleEditMode: function(EditMode) {
+            var oChangeModel = this.getView().getModel("changeModel");
+        
+            oChangeModel.setProperty("/editable", EditMode);
+            oChangeModel.setProperty("/visibleGet", !EditMode);
+            oChangeModel.setProperty("/buttonText", EditMode ? "저장" : "수정");
+            oChangeModel.setProperty("/visibleEdit", EditMode);
+        },
+
+        // 푸터 - 저장
+        onSave : function () {
+            var oChangeModel = this.getView().getModel("changeModel");
+            var Editable = oChangeModel.getProperty("/editable");
+
+            this.toggleEditMode(!Editable);
+        },
+
+        // 푸터 - 취소 버튼
+        onCancel: function () {
+            this.toggleEditMode(false);
+            this._getData();
+        },
+                
          // MultiInput 초기화 및 토큰 설정
-         MultiInputs: function (sMultiInputId, bSetDefaultTokens) {
+         MultiInputs: function (sMultiInputId, setDefaultTokens) {
             var oMultiInput = this.byId(sMultiInputId);
             oMultiInput.setTokens([]);
         
-            if (bSetDefaultTokens) {
+            if (setDefaultTokens) {
                 this._getDefaultTokens(sMultiInputId).then(function (aTokens) {
                     oMultiInput.setTokens(aTokens);
                     this.PlantFilter(); // 플랜트 필터 적용
@@ -61,19 +97,6 @@ sap.ui.define([
                 });
             }
         },
-
-        // PlantFilter: function () {
-        //     var oTable = this.byId("dataTable");
-        //     var oPlantFilter = this.byId("VHPlant").getTokens()[0]; // 기본 토큰 사용
-        //     var sPlant = oPlantFilter ? oPlantFilter.getKey() : "";
-
-        //     if (sPlant) {
-        //         var oFilter = new Filter("Plant", FilterOperator.EQ, sPlant);
-        //         oTable.getBinding("items").filter(oFilter);
-        //     } else {
-        //         oTable.getBinding("items").filter([]);
-        //     }
-        // },
 
         PlantFilter: function () {
             var oTable = this.byId("dataTable");
@@ -117,7 +140,7 @@ sap.ui.define([
                     };
 
                     // dataModel에서 기존 데이터를 가져옴
-                    var oDataModel = this.getView().getModel("dataModel");
+                    var oDataModel = this.getModel("dataModel");
                     var aItems = oDataModel.getProperty("/Items") || [];
 
                     // 새로운 행 추가
@@ -157,8 +180,8 @@ sap.ui.define([
             // 선택된 항목을 모델 데이터에서 제거
             aSelectedItems.reverse().forEach(function (oItem) {
                 var oContext = oItem.getBindingContext("dataModel");
-                var iIndex = oContext.getPath().split('/').pop(); // 인덱스를 계산
-                aData.splice(iIndex, 1);
+                var index = oContext.getPath().split('/').pop(); // 인덱스를 계산
+                aData.splice(index, 1);
             });
         
             // 모델의 데이터 업데이트
@@ -171,34 +194,6 @@ sap.ui.define([
             oTable.removeSelections(true);
         },        
         
-        // 수정
-        onEdit: function () {
-            this.getId("btnEdit").setVisible("false");
-            this.getId("upload").setVisible("false");
-            this.getId("download").setVisible("false");
-            this.getId("btnSave").setVisible("true");
-            this.getId("add").setVisible("true");
-            this.getId("delete").setVisible("true");
-            this.getId("operationid").setVisible("true");
-            this.getId("workcenter").setVisible("true");
-        },
-
-        //조회 첫 화면 (버튼 리셋)
-        ResetBtn: function () {
-            this.getId("btnEdit").setVisible("true");
-            this.getId("upload").setVisible("true");
-            this.getId("download").setVisible("true");
-            this.getId("btnSave").setVisible("false");
-            this.getId("add").setVisible("false");
-            this.getId("delete").setVisible("false");
-            this.getId("operationid").setVisible("false");
-            this.getId("workcenter").setVisible("false");
-        },
-        // 푸터 - 취소 버튼
-        onCancel: function () {
-            this._getData();
-        },
-
         // 엑셀 다운로드
         onDownload: function () {
             var aCols, oRowBinding, oSettings, oSheet, oTable;
@@ -327,10 +322,17 @@ sap.ui.define([
         },
         // 공통 다이얼로그 및 테이블 설정 함수
         _createValueHelpDialog: function (sTitle, sKey, aColumns, aItems, sMultiInputId) {
+            var supportMultiselect = true;
+    
+            // 특정 ID일 경우 다중 선택 비활성화
+            if (sMultiInputId.includes("operationid") || sMultiInputId.includes("workcenter")) {
+                supportMultiselect = false;
+            }
+
             var oDialog = new ValueHelpDialog({
                 title: sTitle,
-                supportMultiselect: true,
                 key: sKey,
+                supportMultiselect,
                 ok: function (oEvent) {
                     this.onValueHelpOkPress(oEvent, sMultiInputId);
                 }.bind(this),
@@ -350,7 +352,6 @@ sap.ui.define([
             oDialog.getTableAsync().then(function (oTable) {
                 oTable.setModel(this.valueModel);
         
-                // Check for binding type and bind accordingly
                 if (oTable.bindRows) {
                     oTable.bindAggregation("rows", {
                         path: "/",
@@ -411,7 +412,7 @@ sap.ui.define([
         },
 
         // 플랜트  default 값
-        _getDefaultTokens: function (sMultiInputId) {
+        _getDefaultTokens: function () {
             var oMainModel = this.getOwnerComponent().getModel();
 
             // 비동기 OData 읽기 작업을 수행하는 함수
@@ -450,11 +451,11 @@ sap.ui.define([
                     new Label({ text: "{Plant}" })
                 ];
                 
-                this._createValueHelpDialog("플랜트 조회", "Plant", aColumns, aItems, "VHPlant");
+                this._createValueHelpDialog("플랜트 조회", "Plant", aColumns, aItems, sMultiInputId);
                 this.getPlantData();
             
             // 필터_공정코드
-            } else if (sMultiInputId === this.byId("VHOpCode").getId()) {
+            } else if (sMultiInputId === this.byId("VHOpCode").getId() || sMultiInputId.includes("operationid")) {
                 var aColumns = [
                     new UIColumn({
                         label: new Label({text: "공정코드"}),
@@ -470,11 +471,12 @@ sap.ui.define([
                     new Label({ text: "{OperationStandardTextCodeName}" })
                 ];
                 
-                this._createValueHelpDialog("공정코드 조회", "OperationStandardTextCode", aColumns, aItems, "VHOpCode");
+                this._createValueHelpDialog("공정코드 조회", "OperationStandardTextCode", aColumns, aItems, sMultiInputId);
                 this.getOpCodeData();
 
             // 필터_작업장
-            } else if (sMultiInputId === this.byId("VHWC").getId() || sMultiInputId === this.byId("workcenter").getId()) {
+            } else if (sMultiInputId === this.byId("VHWC").getId() || sMultiInputId.includes("workcenter")) {
+                console.log(sMultiInputId);
                 var aColumns = [
                     new UIColumn({
                         label: new Label({ text: "범주" }),
@@ -508,11 +510,11 @@ sap.ui.define([
 
                 if(sMultiInputId === this.byId("VHWC").getId()){
 
-                    this._createValueHelpDialog("작업장 조회", "WorkCenter", aColumns, aItems, "VHWC");
+                    this._createValueHelpDialog("작업장 조회", "WorkCenter", aColumns, aItems, sMultiInputId);
 
                 } else {
 
-                    this._createValueHelpDialog("작업장 조회", "WorkCenter", aColumns, aItems, "workcenter");
+                    this._createValueHelpDialog("작업장 조회", "WorkCenter", aColumns, aItems, sMultiInputId);
                 }
                 this.getWCData();
 
