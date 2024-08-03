@@ -31,8 +31,48 @@ sap.ui.define([
 
         _getData: function () {
             var oMainModel = this.getOwnerComponent().getModel(); // 메인 모델 가져오기
+
+             // 공통 데이터 모델 가져오기 (작업장, 공정코드)
+            var commonModelData = function(url, modelName) { // (/DB이름 , sampleModel)
+                return this._getODataRead(oMainModel, url).then(function(data) {
+                    this.setModel(new JSONModel(data), modelName);
+                }.bind(this));
+            }.bind(this);
+
+            Promise.all([
+                commonModelData("/Operationid", "opiModel"),
+                commonModelData("/Workcenter", "wcModel")
+            
+            ]).then(function() {
+                var opiModel = this.getModel("opiModel").getData();
+                var oWcModel = this.getModel("wcModel").getData();
+            
+            // Operationcd 데이터를 가져오는 작업
             this._getODataRead(oMainModel, "/Operationcd").done(
                 function(aGetData) {
+                    aGetData.forEach(function(item){
+                        var wcdata = item.Workcenter; // 작업장 코드
+                        var wcdataText = item.WorkcenterText; // 모델에 넣어 줄 작업장명
+                        var opidata = item.Operationid; // 공정코드
+                        var opidataText = item.OperationidText; // 모델에 넣어 줄 공정코드명
+                        oWcModel.forEach(function(wcitem){
+                            var wcdatas = wcitem.WorkCenter
+
+                            if(wcdata === wcdatas){
+                                var wcdatasText = wcitem.WorkCenterText;
+                                wcdataText = wcdatasText
+                            }
+                        });
+                        opiModel.forEach(function(opitem){
+                            var opidatas = opitem.OperationStandardTextCode;
+                            if(opidata === opidatas){
+                                var opidatasText = opitem.OperationStandardTextCodeName;
+                                opidataText = opidatasText
+                            }
+                        });
+                        item.WorkcenterText = wcdataText;
+                        item.OperationidText = opidataText;
+                    });
                     // 데이터 읽기 성공 시 JSON 모델로 설정
                     this.setModel(new JSONModel({ Items: aGetData }), "dataModel");
                     this.MultiInputs("VHWC"); // 필터_작업장
@@ -40,13 +80,15 @@ sap.ui.define([
                     this.MultiInputs("VHPlant", true); //필터_플랜트
                     this.MultiInputs("operationid") // 테이블_공정코드
                     this.MultiInputs("workcenter") // 테이블_작업장
-                      
-                }.bind(this)
-            ).fail(function() {
-                MessageBox.information("테이블 데이터를 읽어올 수 없습니다.");
-            });
-           
-        },        
+                    
+                    }.bind(this)
+                ).fail(function() {
+                    MessageBox.information("테이블 데이터를 읽어올 수 없습니다.");
+                });
+            }.bind(this)).catch(function(error) {
+                MessageBox.error(error); // 에러 처리
+            })
+        },  
 
         // 메인 화면 visible editable 변경 모델
         _setModel: function () {
@@ -95,9 +137,34 @@ sap.ui.define([
                 }.bind(this)).catch(function (oError) {
                     MessageBox.error("토큰 설정 중 오류가 발생했습니다.");
                 });
+            
             }
         },
 
+        // 플랜트  default 값
+        _getDefaultTokens: function () {
+            var oMainModel = this.getOwnerComponent().getModel();
+
+            // 비동기 OData 읽기 작업을 수행하는 함수
+            return this._getODataRead(oMainModel, "/Plant").then(function (aPlantData) {
+                if (aPlantData && aPlantData.length > 0) {
+                    var sPlant = aPlantData[0].Plant;
+                    var oToken1 = new Token({
+                        key: sPlant,
+                        text: sPlant
+                    });
+                    return [oToken1]; // 토큰 배열 반환
+                } else {
+                    throw new Error("플랜트 데이터를 찾을 수 없습니다.");
+                }
+            }).catch(function (oError) {
+                // 에러 처리
+                console.error("플랜트 데이터를 찾을 수 없습니다.", oError);
+                throw oError;
+            });
+        },
+
+        // 플랜트 필터 (테이블 필터링)
         PlantFilter: function () {
             var oTable = this.byId("dataTable");
             if (!oTable) {
@@ -155,6 +222,7 @@ sap.ui.define([
 
         // 데이터 삭제 버튼
         onDelete: function () {
+    
             var oTable = this.byId("dataTable");
             var aSelectedItems = oTable.getSelectedItems(); // 선택된 항목을 가져오기
             var oDataModel = this.getModel("dataModel");
@@ -175,6 +243,7 @@ sap.ui.define([
                 var oContext = oItem.getBindingContext("dataModel");
                 var oRowData = oContext.getObject();
                 this.aItemsToDelete.push(oRowData);
+                console.log(oRowData);
             }.bind(this));
         
             // 선택된 항목을 모델 데이터에서 제거
@@ -248,7 +317,7 @@ sap.ui.define([
             var aCols = [];
             // 컬럼 라벨과 속성을 정의
             var labels = ['플랜트', '공정코드', '공정명', '작업장', '작업장명'];
-            var properties = ['Plant', 'Operationid', 'OperationStandardTextCodeName', 'Workcenter', 'WorkCenterText'];
+            var properties = ['Plant', 'Operationid', 'OperationidText', 'Workcenter', 'WorkcenterText'];
         
             // 라벨과 속성을 매핑하여 컬럼 설정 배열을 생성
             labels.forEach(function (label, index) {
@@ -393,9 +462,7 @@ sap.ui.define([
 
         // OK 버튼 핸들러
         onValueHelpOkPress: function (oEvent, sMultiInputId) {
-            console.log(oEvent);
             var aTokens = oEvent.getParameter("tokens");
-            console.log(aTokens);
             var oMultiInput = this.byId(sMultiInputId); // 선택된 MultiInput 필드 가져오기
             oMultiInput.setTokens(aTokens);
             this._oVHD.close();
@@ -409,29 +476,6 @@ sap.ui.define([
         // 다이얼로그가 닫힌 후 호출
         onValueHelpAfterClose: function () {
             this._oVHD.destroy();
-        },
-
-        // 플랜트  default 값
-        _getDefaultTokens: function () {
-            var oMainModel = this.getOwnerComponent().getModel();
-
-            // 비동기 OData 읽기 작업을 수행하는 함수
-            return this._getODataRead(oMainModel, "/Plant").then(function (aPlantData) {
-                if (aPlantData && aPlantData.length > 0) {
-                    var sPlant = aPlantData[0].Plant;
-                    var oToken1 = new Token({
-                        key: sPlant,
-                        text: sPlant
-                    });
-                    return [oToken1]; // 토큰 배열 반환
-                } else {
-                    throw new Error("플랜트 데이터를 찾을 수 없습니다.");
-                }
-            }).catch(function (oError) {
-                // 에러 처리
-                console.error("플랜트 데이터를 찾을 수 없습니다.", oError);
-                throw oError;
-            });
         },
 
         onValueHelps: function (oEvent) {
@@ -508,76 +552,42 @@ sap.ui.define([
                     new Label({ text: "{Language}" })
                 ];
 
-                if(sMultiInputId === this.byId("VHWC").getId()){
+                this._createValueHelpDialog("작업장 조회", "WorkCenter", aColumns, aItems, sMultiInputId);
 
-                    this._createValueHelpDialog("작업장 조회", "WorkCenter", aColumns, aItems, sMultiInputId);
-
-                } else {
-
-                    this._createValueHelpDialog("작업장 조회", "WorkCenter", aColumns, aItems, sMultiInputId);
-                }
                 this.getWCData();
-
-            } else if (sMultiInputId === this.byId("operationid").getId()){
 
             }
         },        
 
+         // 공통 데이터 가져오기 함수
+        commonData: function (sPath, sErrorMessage) {
+        var oModel = this.getOwnerComponent().getModel();
+        
+        return this._getODataRead(oModel, sPath)
+            .done(function (oData) {
+                var oTable = this._oVHD.getTable();
+                oTable.setModel(new JSONModel(oData));
+                oTable.bindRows("/");
+                this._oVHD.update();
+            }.bind(this))
+            .fail(function () {
+                MessageBox.error(sErrorMessage);
+            });
+        },
+
         // 플랜트 데이터
         getPlantData: function () {
-            var oPlantModel = this.getOwnerComponent().getModel();
-        
-            this._getODataRead(oPlantModel, "/Plant").done(
-                function (oData) {
-                    var oTable = this._oVHD.getTable();
-                    oTable.setModel(new JSONModel(oData));
-                    oTable.bindRows("/");
-                    this._oVHD.update();
-                }.bind(this)).fail(function(){
-                // 데이터 읽기 실패 시 메시지 박스 표시
-                    sap.m.MessageBox.error("플랜트 데이터를 가져오는 데 실패했습니다.");
-           
-            }).always(function(){
-                // 항상 실행되는 코드
-            });
+            this.commonData("/Plant", "플랜트 데이터를 가져오는 데 실패했습니다.");
         },
 
         // 공정코드 데이터
         getOpCodeData: function () {
-            var oPlantModel = this.getOwnerComponent().getModel();
-        
-            this._getODataRead(oPlantModel, "/Operationid").done(
-                function (oData) {
-                    var oTable = this._oVHD.getTable();
-                    oTable.setModel(new JSONModel(oData));
-                    oTable.bindRows("/");
-                    this._oVHD.update();
-                }.bind(this)).fail(function(){
-                // 데이터 읽기 실패 시 메시지 박스 표시
-                    sap.m.MessageBox.error("공정코드 데이터를 가져오는 데 실패했습니다.");
-           
-            }).always(function(){
-                // 항상 실행되는 코드
-            });
+            this.commonData("/Operationid", "공정코드 데이터를 가져오는 데 실패했습니다.");
         },
 
          // 작업장 데이터
          getWCData: function () {
-            var oWCModel = this.getOwnerComponent().getModel();
-        
-            this._getODataRead(oWCModel, "/Workcenter").done(
-                function (oData) {
-                    var oTable = this._oVHD.getTable();
-                    oTable.setModel(new JSONModel(oData));
-                    oTable.bindRows("/");
-                    this._oVHD.update();
-                }.bind(this)).fail(function(){
-                // 데이터 읽기 실패 시 메시지 박스 표시
-                    sap.m.MessageBox.error("작업장 데이터를 가져오는 데 실패했습니다.");
-           
-            }).always(function(){
-                // 항상 실행되는 코드
-            });
+            this.commonData("/Workcenter", "작업장 데이터를 가져오는 데 실패했습니다.");
         }
     });
 });

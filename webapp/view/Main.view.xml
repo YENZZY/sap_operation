@@ -79,9 +79,9 @@
                             <cells>
                                 <Text text="{dataModel>Plant}" wrapping="false"/>
                                 <MultiInput id="operationid" valueHelpRequest="onValueHelps" value="{dataModel>Operationid}" editable="{changeModel>/editable}"/>
-                                <Text text="{dataModel>OperationStandardTextCodeName}" wrapping="false"/>
+                                <Text text="{dataModel>OperationidText}" wrapping="false"/>
                                 <MultiInput id="workcenter" valueHelpRequest="onValueHelps" value="{dataModel>Workcenter}" editable="{changeModel>/editable}"/>
-                                <Text text="{dataModel>WorkCenterText}" wrapping="false"/>
+                                <Text text="{dataModel>WorkcenterText}" wrapping="false"/>
                             </cells>
                         </ColumnListItem>
                     </items>
