@@ -205,7 +205,7 @@ sap.ui.define([
             this._getData();
         },
         
-        handleValueHelp: function (oEvent) {
+        opiValueHelp: function (oEvent) {
             var sInputId = oEvent.getSource().getId();
             var oView = this.getView();
             var rowId = oEvent.getSource().getParent().getId().split("dataTable-");
@@ -225,14 +225,14 @@ sap.ui.define([
             }
         },        
         
-      handleValueHelp2: function (oEvent) {
-        var sInputId = oEvent.getSource().getId();
-        console.log("sid",sInputId);
-        var oView = this.getView();
-        var rowId = oEvent.getSource().getParent().getId().split("dataTable-");
-        this.inputRow = rowId[1];
-    
-       if (sInputId.includes("workcenter")) {
+        wcValueHelp: function (oEvent) {
+            var sInputId = oEvent.getSource().getId();
+            console.log("sid",sInputId);
+            var oView = this.getView();
+            var rowId = oEvent.getSource().getParent().getId().split("dataTable-");
+            this.inputRow = rowId[1];
+        
+            if (sInputId.includes("workcenter")) {
                 this._pWorkCenterValueHelpDialog = Fragment.load({
                 id: oView.getId()+this.inputRow,
                 name: "operation.view.Fragments.WorkCenter",
@@ -242,59 +242,59 @@ sap.ui.define([
                 return oValueHelpDialog;
                 });
                 this._pWorkCenterValueHelpDialog.then(function(oValueHelpDialog){
-       
+    
                     oValueHelpDialog.open();
-                 });
-        }
-  },
+                });
+            }
+        },
 
-      _handleValueHelpSearch : function (oEvent) {
-         var sValue = oEvent.getParameter("value");
-         var oFilter = new Filter(
-            "OperationStandardTextCode",
-            FilterOperator.Contains, sValue
-         );
-         oEvent.getSource().getBinding("items").filter([oFilter]);
-      },
-
-      _handleValueHelpClose: function (oEvent) {
-        var oSelectedItem = oEvent.getParameter("selectedItem");
-        if (oSelectedItem) {
-            var sPath = oSelectedItem.getBindingContext("opiModel").getPath();
-            var oSelectedData = this.getModel("opiModel").getProperty(sPath);
-            var items = this.getModel("dataModel").getData().Items;
-            items[this.inputRow].Operationid = oSelectedData.OperationStandardTextCode;
-  
-            items[this.inputRow].OperationidText = oSelectedData.OperationStandardTextCodeName;
-
-            this.getModel("dataModel").updateBindings();
-        }
-        oEvent.getSource().getBinding("items").filter([]);
-    },
-
-    wcVhSearch : function (oEvent) {
+        opiVhSearch : function (oEvent) {
             var sValue = oEvent.getParameter("value");
             var oFilter = new Filter(
-            "WorkCenter",
-            FilterOperator.Contains, sValue
+                "OperationStandardTextCode",
+                FilterOperator.Contains, sValue
             );
             oEvent.getSource().getBinding("items").filter([oFilter]);
         },
 
-    wcVhClose: function (oEvent) {
-       var oSelectedItem = oEvent.getParameter("selectedItem");
-       if (oSelectedItem) {
-           var sPath = oSelectedItem.getBindingContext("wcModel").getPath();
-           var oSelectedData = this.getModel("wcModel").getProperty(sPath);
-           var items = this.getModel("dataModel").getData().Items;
-           items[this.inputRow].Workcenter = oSelectedData.WorkCenter;
- 
-           items[this.inputRow].WorkcenterText = oSelectedData.WorkCenterText;
+        opiVhClose: function (oEvent) {
+            var oSelectedItem = oEvent.getParameter("selectedItem");
+            if (oSelectedItem) {
+                var sPath = oSelectedItem.getBindingContext("opiModel").getPath();
+                var oSelectedData = this.getModel("opiModel").getProperty(sPath);
+                var items = this.getModel("dataModel").getData().Items;
+                items[this.inputRow].Operationid = oSelectedData.OperationStandardTextCode;
+    
+                items[this.inputRow].OperationidText = oSelectedData.OperationStandardTextCodeName;
 
-           this.getModel("dataModel").updateBindings();
-       }
-       oEvent.getSource().getBinding("items").filter([]);
-   },
+                this.getModel("dataModel").updateBindings();
+            }
+            oEvent.getSource().getBinding("items").filter([]);
+        },
+
+        wcVhSearch : function (oEvent) {
+                var sValue = oEvent.getParameter("value");
+                var oFilter = new Filter(
+                "WorkCenter",
+                FilterOperator.Contains, sValue
+                );
+                oEvent.getSource().getBinding("items").filter([oFilter]);
+            },
+
+        wcVhClose: function (oEvent) {
+            var oSelectedItem = oEvent.getParameter("selectedItem");
+            if (oSelectedItem) {
+                var sPath = oSelectedItem.getBindingContext("wcModel").getPath();
+                var oSelectedData = this.getModel("wcModel").getProperty(sPath);
+                var items = this.getModel("dataModel").getData().Items;
+                items[this.inputRow].Workcenter = oSelectedData.WorkCenter;
+        
+                items[this.inputRow].WorkcenterText = oSelectedData.WorkCenterText;
+
+                this.getModel("dataModel").updateBindings();
+            }
+            oEvent.getSource().getBinding("items").filter([]);
+        },
 
          // MultiInput 초기화 및 토큰 설정
          MultiInputs: function (sMultiInputId, setDefaultTokens) {

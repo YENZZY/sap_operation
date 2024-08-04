@@ -4,10 +4,10 @@
 	<TableSelectDialog
 		noDataText="공정 코드 데이터가 없습니다."
 		title="공정 코드"
-		search="_handleValueHelpSearch"
+		search="opiVhSearch"
 		searchPlaceholder="찾으시는 공정코드를 입력해주세요."
-		confirm="_handleValueHelpClose"
-		cancel="_handleValueHelpClose"
+		confirm="opiVhClose"
+		cancel="opiVhClose"
 		showClearButton="false"
 		items="{
 			path : 'opiModel>/',

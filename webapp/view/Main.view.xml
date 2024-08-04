@@ -83,7 +83,7 @@
                                     id="operationid"
                                     type="Text"
                                     showValueHelp="true"
-                                    valueHelpRequest="handleValueHelp"
+                                    valueHelpRequest="opiValueHelp"
                                     value="{dataModel>Operationid}"
                                     editable="{changeModel>/editable}"
                                 />
@@ -92,7 +92,7 @@
                                     id="workcenter"
                                     type="Text"
                                     showValueHelp="true"
-                                    valueHelpRequest="handleValueHelp2"
+                                    valueHelpRequest="wcValueHelp"
                                     value="{dataModel>Workcenter}"
                                     editable="{changeModel>/editable}"
                                 />
