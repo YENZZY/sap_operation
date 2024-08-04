@@ -1,0 +1,38 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core">
+	<TableSelectDialog
+		noDataText="No Products Found"
+		title="Select Product"
+		search=".handleSearch"
+		searchPlaceholder="Search Products"
+		confirm=".handleValueHelpClose"
+		cancel=".handleValueHelpClose"
+		showClearButton="true"
+		items="{
+			path : 'dataModel>/',
+			sorter : {
+				path : '/',
+				descending : false
+			}
+		}">
+		<ColumnListItem selected="{selected}">
+			<cells>
+				<Text text="{opiModel>OperationStandardTextCode}" />
+				<Text text="{opiModel>OperationStandardTextCodeName}" />
+			</cells>
+		</ColumnListItem>
+		<columns>
+			<Column>
+				<header>
+					<Text text="공정코드" />
+				</header>
+			</Column>
+			<Column>
+				<header>
+					<Text text="공정코드명" />
+				</header>
+			</Column>
+		</columns>
+	</TableSelectDialog>
+</core:FragmentDefinition>

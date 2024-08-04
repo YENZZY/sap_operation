@@ -7,13 +7,14 @@
     xmlns:f="sap.f"
     xmlns:fb="sap.ui.comp.filterbar"
     xmlns:u="sap.ui.unified"
+    xmlns:svm="sap.ui.comp.smartvariants"
     >
     <!-- <Page id="page" title="{i18n>title}"> -->
         <f:DynamicPage showFooter="true">
             <f:title>
                 <f:DynamicPageTitle>
                     <f:heading>
-                        <Title text="{i18n>title}"/>
+                        <svm:SmartVariantManagement id="svm" showExecuteOnSelection="true" />
                     </f:heading>
                 </f:DynamicPageTitle>
             </f:title>
@@ -78,9 +79,23 @@
                         <ColumnListItem vAlign="Middle" type="Navigation">
                             <cells>
                                 <Text text="{dataModel>Plant}" wrapping="false"/>
-                                <MultiInput id="operationid" valueHelpRequest="onValueHelps" value="{dataModel>Operationid}" editable="{changeModel>/editable}"/>
+                                <Input
+                                    id="operationid"
+                                    type="Text"
+                                    showValueHelp="true"
+                                    valueHelpRequest="handleValueHelp"
+                                    value="{dataModel>Operationid}"
+                                    editable="{changeModel>/editable}"
+                                />
                                 <Text text="{dataModel>OperationidText}" wrapping="false"/>
-                                <MultiInput id="workcenter" valueHelpRequest="onValueHelps" value="{dataModel>Workcenter}" editable="{changeModel>/editable}"/>
+                                <Input
+                                    id="workcenter"
+                                    type="Text"
+                                    showValueHelp="true"
+                                    valueHelpRequest="onTableVH"
+                                    value="{dataModel>Workcenter}"
+                                    editable="{changeModel>/editable}"
+                                />
                                 <Text text="{dataModel>WorkcenterText}" wrapping="false"/>
                             </cells>
                         </ColumnListItem>

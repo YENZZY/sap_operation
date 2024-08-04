@@ -12,8 +12,9 @@ sap.ui.define([
     "sap/m/Column",
     "sap/ui/table/Column",
     'sap/m/Text',
-    "sap/ui/export/Spreadsheet"
-], function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet) {
+    "sap/ui/export/Spreadsheet",
+    'sap/ui/core/Fragment'
+], function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet, Fragment) {
     "use strict";
 
     var EdmType = exportLibrary.EdmType;
@@ -22,7 +23,6 @@ sap.ui.define([
         onInit: function () {
             this.getRouter().getRoute("Main").attachMatched(this._onRouteMatched, this);
             this._setModel(); 
-
         },
 
         _onRouteMatched: function () {
@@ -78,9 +78,7 @@ sap.ui.define([
                     this.MultiInputs("VHWC"); // 필터_작업장
                     this.MultiInputs("VHOpCode"); // 필터_공정코드
                     this.MultiInputs("VHPlant", true); //필터_플랜트
-                    this.MultiInputs("operationid") // 테이블_공정코드
-                    this.MultiInputs("workcenter") // 테이블_작업장
-                    
+            
                     }.bind(this)
                 ).fail(function() {
                     MessageBox.information("테이블 데이터를 읽어올 수 없습니다.");
@@ -111,6 +109,88 @@ sap.ui.define([
             oChangeModel.setProperty("/visibleEdit", EditMode);
         },
 
+        // 필터 검색
+        onSearch: function () {
+            var aPlantTokens = this.byId("VHPlant").getTokens().map(function (token) {
+                return token.getKey();
+            });
+            var aOpCodeTokens = this.byId("VHOpCode").getTokens().map(function (token) {
+                return token.getKey();
+            });
+            var aWCTokens = this.byId("VHWC").getTokens().map(function (token) {
+                return token.getKey();
+            });
+        
+        
+            var oTable = this.byId("dataTable");
+            if (!oTable) {
+                MessageBox.error("테이블을 찾을 수가 없습니다.");
+                return;
+            }
+        
+            var oBinding = oTable.getBinding("items");
+            if (!oBinding) {
+                MessageBox.error("테이블에서 아이템 바인딩을 할 데이터를 찾을 수 없습니다.");
+                return;
+            }
+        
+            var aFilters = [];
+        
+            if (aPlantTokens.length > 0) {
+                var aPlantFilters = aPlantTokens.map(function (token) {
+                    return new Filter({
+                        path: "Plant",
+                        operator: FilterOperator.EQ,
+                        value1: token
+                    });
+                });
+                aFilters.push(new Filter({
+                    filters: aPlantFilters,
+                    and: false // OR 조건
+                }));
+            } else {
+                MessageBox.error("플랜트 값 선택은 필수입니다.");
+                return;
+            }
+        
+            if (aOpCodeTokens.length > 0) {
+                var aOpCodeFilters = aOpCodeTokens.map(function (token) {
+                    return new Filter({
+                        path: "Operationid",
+                        operator: FilterOperator.EQ,
+                        value1: token
+                    });
+                });
+                aFilters.push(new Filter({
+                    filters: aOpCodeFilters,
+                    and: false 
+                }));
+            }
+        
+            if (aWCTokens.length > 0) {
+                var aWCFilters = aWCTokens.map(function (token) {
+                    return new Filter({
+                        path: "Workcenter",
+                        operator: FilterOperator.EQ,
+                        value1: token
+                    });
+                });
+                aFilters.push(new Filter({
+                    filters: aWCFilters,
+                    and: false 
+                }));
+            }
+        
+            if (aFilters.length > 0) {
+                oBinding.filter(new Filter({
+                    filters: aFilters,
+                    and: true
+                }));
+            } else {
+                oBinding.filter([]);
+            }
+        },        
+
         // 푸터 - 저장
         onSave : function () {
             var oChangeModel = this.getView().getModel("changeModel");
@@ -124,7 +204,53 @@ sap.ui.define([
             this.toggleEditMode(false);
             this._getData();
         },
-                
+        
+        handleValueHelp: function (oEvent) {
+
+            var oView = this.getView();
+            var rowId = oEvent.getSource().getParent().getId().split("rows-row");
+
+            this.inputRow = rowId[1];
+
+         // create value help dialog
+         if (!this._pValueHelpDialog) {
+            this._pValueHelpDialog = Fragment.load({
+               id: oView.getId(),
+               name: "operation.view.Fragments.OperationId",
+               controller: this
+            }).then(function(oValueHelpDialog){
+               oView.addDependent(oValueHelpDialog);
+               return oValueHelpDialog;
+            });
+         }
+
+         this._pValueHelpDialog.then(function(oValueHelpDialog){
+            // open value help dialog
+            oValueHelpDialog.open();
+         });
+      },
+
+      _handleValueHelpSearch : function (evt) {
+         var sValue = evt.getParameter("value");
+         var oFilter = new Filter(
+            "Operationid",
+            FilterOperator.Contains, sValue
+         );
+         evt.getSource().getBinding("items").filter([oFilter]);
+      },
+
+      _handleValueHelpClose : function (evt) {
+         var oSelectedItem = evt.getParameter("selectedItem");
+         if (oSelectedItem) {
+                var items = this.getModel("dataModel").getData();
+
+                items[this.inputRow].Unit = oSelectedItem.getTitle(); 
+
+                 this.setModel(new JSONModel(items), "dataModel");
+         }
+         evt.getSource().getBinding("items").filter([]);
+      },
+
          // MultiInput 초기화 및 토큰 설정
          MultiInputs: function (sMultiInputId, setDefaultTokens) {
             var oMultiInput = this.byId(sMultiInputId);
