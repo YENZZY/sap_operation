@@ -1,0 +1,56 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core">
+	<TableSelectDialog
+		noDataText="작업장 데이터가 없습니다."
+		title="작업장"
+		search="wcVhSearch"
+		searchPlaceholder="찾으시는 작업장을 입력해주세요."
+		confirm="wcVhClose"
+		cancel="wcVhClose"
+		showClearButton="false"
+		items="{
+			path : 'wcModel>/',
+			sorter : {
+				path : 'WorkCenter',
+				descending : false
+			}
+		}">
+		<ColumnListItem selected="{selectedItem}">
+			<cells>
+				<Text text="{wcModel>WorkCenterCategoryCode}" />
+				<Text text="{wcModel>Plant}" />
+				<Text text="{wcModel>WorkCenter}" />
+				<Text text="{wcModel>WorkCenterText}" />
+				<Text text="{wcModel>Language}" />
+			</cells>
+		</ColumnListItem>
+		<columns>
+			<Column>
+				<header>
+					<Text text="범주" />
+				</header>
+			</Column>
+			<Column>
+				<header>
+					<Text text="플랜트" />
+				</header>
+			</Column>
+			<Column>
+				<header>
+					<Text text="작업장" />
+				</header>
+			</Column>
+			<Column>
+				<header>
+					<Text text="작업장명" />
+				</header>
+			</Column>
+			<Column>
+				<header>
+					<Text text="언어" />
+				</header>
+			</Column>
+		</columns>
+	</TableSelectDialog>
+</core:FragmentDefinition>

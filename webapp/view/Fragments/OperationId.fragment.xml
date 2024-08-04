@@ -2,21 +2,21 @@
 	xmlns="sap.m"
 	xmlns:core="sap.ui.core">
 	<TableSelectDialog
-		noDataText="No Products Found"
-		title="Select Product"
-		search=".handleSearch"
-		searchPlaceholder="Search Products"
-		confirm=".handleValueHelpClose"
-		cancel=".handleValueHelpClose"
-		showClearButton="true"
+		noDataText="공정 코드 데이터가 없습니다."
+		title="공정 코드"
+		search="_handleValueHelpSearch"
+		searchPlaceholder="찾으시는 공정코드를 입력해주세요."
+		confirm="_handleValueHelpClose"
+		cancel="_handleValueHelpClose"
+		showClearButton="false"
 		items="{
-			path : 'dataModel>/',
+			path : 'opiModel>/',
 			sorter : {
-				path : '/',
+				path : 'OperationStandardTextCode',
 				descending : false
 			}
 		}">
-		<ColumnListItem selected="{selected}">
+		<ColumnListItem selected="{selectedItem}">
 			<cells>
 				<Text text="{opiModel>OperationStandardTextCode}" />
 				<Text text="{opiModel>OperationStandardTextCodeName}" />

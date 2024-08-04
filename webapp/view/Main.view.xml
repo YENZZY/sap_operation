@@ -92,7 +92,7 @@
                                     id="workcenter"
                                     type="Text"
                                     showValueHelp="true"
-                                    valueHelpRequest="onTableVH"
+                                    valueHelpRequest="handleValueHelp2"
                                     value="{dataModel>Workcenter}"
                                     editable="{changeModel>/editable}"
                                 />

@@ -206,50 +206,95 @@ sap.ui.define([
         },
         
         handleValueHelp: function (oEvent) {
-
+            var sInputId = oEvent.getSource().getId();
             var oView = this.getView();
-            var rowId = oEvent.getSource().getParent().getId().split("rows-row");
-
+            var rowId = oEvent.getSource().getParent().getId().split("dataTable-");
             this.inputRow = rowId[1];
+        
+            if (sInputId.includes("operationid")) {
+                Fragment.load({
+                    id: oView.getId() + this.inputRow, // 고유 아이디 생성
+                    name: "operation.view.Fragments.OperationId",
+                    controller: this
+                }).then(function (oValueHelpDialog) {
+                    oView.addDependent(oValueHelpDialog);
+                    oValueHelpDialog.open();
+                }).catch(function (oError) {
+                    console.error("Failed to load OperationId dialog:", oError);
+                });
+            }
+        },        
+        
+      handleValueHelp2: function (oEvent) {
+        var sInputId = oEvent.getSource().getId();
+        console.log("sid",sInputId);
+        var oView = this.getView();
+        var rowId = oEvent.getSource().getParent().getId().split("dataTable-");
+        this.inputRow = rowId[1];
+    
+       if (sInputId.includes("workcenter")) {
+                this._pWorkCenterValueHelpDialog = Fragment.load({
+                id: oView.getId()+this.inputRow,
+                name: "operation.view.Fragments.WorkCenter",
+                controller: this
+                }).then(function(oValueHelpDialog){
+                oView.addDependent(oValueHelpDialog);
+                return oValueHelpDialog;
+                });
+                this._pWorkCenterValueHelpDialog.then(function(oValueHelpDialog){
+       
+                    oValueHelpDialog.open();
+                 });
+        }
+  },
 
-         // create value help dialog
-         if (!this._pValueHelpDialog) {
-            this._pValueHelpDialog = Fragment.load({
-               id: oView.getId(),
-               name: "operation.view.Fragments.OperationId",
-               controller: this
-            }).then(function(oValueHelpDialog){
-               oView.addDependent(oValueHelpDialog);
-               return oValueHelpDialog;
-            });
-         }
-
-         this._pValueHelpDialog.then(function(oValueHelpDialog){
-            // open value help dialog
-            oValueHelpDialog.open();
-         });
-      },
-
-      _handleValueHelpSearch : function (evt) {
-         var sValue = evt.getParameter("value");
+      _handleValueHelpSearch : function (oEvent) {
+         var sValue = oEvent.getParameter("value");
          var oFilter = new Filter(
-            "Operationid",
+            "OperationStandardTextCode",
             FilterOperator.Contains, sValue
          );
-         evt.getSource().getBinding("items").filter([oFilter]);
+         oEvent.getSource().getBinding("items").filter([oFilter]);
       },
 
-      _handleValueHelpClose : function (evt) {
-         var oSelectedItem = evt.getParameter("selectedItem");
-         if (oSelectedItem) {
-                var items = this.getModel("dataModel").getData();
+      _handleValueHelpClose: function (oEvent) {
+        var oSelectedItem = oEvent.getParameter("selectedItem");
+        if (oSelectedItem) {
+            var sPath = oSelectedItem.getBindingContext("opiModel").getPath();
+            var oSelectedData = this.getModel("opiModel").getProperty(sPath);
+            var items = this.getModel("dataModel").getData().Items;
+            items[this.inputRow].Operationid = oSelectedData.OperationStandardTextCode;
+  
+            items[this.inputRow].OperationidText = oSelectedData.OperationStandardTextCodeName;
 
-                items[this.inputRow].Unit = oSelectedItem.getTitle(); 
+            this.getModel("dataModel").updateBindings();
+        }
+        oEvent.getSource().getBinding("items").filter([]);
+    },
 
-                 this.setModel(new JSONModel(items), "dataModel");
-         }
-         evt.getSource().getBinding("items").filter([]);
-      },
+    wcVhSearch : function (oEvent) {
+            var sValue = oEvent.getParameter("value");
+            var oFilter = new Filter(
+            "WorkCenter",
+            FilterOperator.Contains, sValue
+            );
+            oEvent.getSource().getBinding("items").filter([oFilter]);
+        },
+
+    wcVhClose: function (oEvent) {
+       var oSelectedItem = oEvent.getParameter("selectedItem");
+       if (oSelectedItem) {
+           var sPath = oSelectedItem.getBindingContext("wcModel").getPath();
+           var oSelectedData = this.getModel("wcModel").getProperty(sPath);
+           var items = this.getModel("dataModel").getData().Items;
+           items[this.inputRow].Workcenter = oSelectedData.WorkCenter;
+ 
+           items[this.inputRow].WorkcenterText = oSelectedData.WorkCenterText;
+
+           this.getModel("dataModel").updateBindings();
+       }
+       oEvent.getSource().getBinding("items").filter([]);
+   },
 
          // MultiInput 초기화 및 토큰 설정
          MultiInputs: function (sMultiInputId, setDefaultTokens) {
@@ -326,10 +371,10 @@ sap.ui.define([
 
                     var oItem = {
                         Plant: sPlant,
-                        OperationStandardTextCode: "",
-                        OperationStandardTextCodeName: "",
-                        WorkCenter: "",
-                        WorkCenterText: ""
+                        Operationid: "",
+                        OperationidText: "",
+                        Workcenter: "",
+                        WorkcenterText: ""
                     };
 
                     // dataModel에서 기존 데이터를 가져옴
