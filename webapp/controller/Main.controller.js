@@ -13,8 +13,9 @@ sap.ui.define([
     "sap/ui/table/Column",
     'sap/m/Text',
     "sap/ui/export/Spreadsheet",
-    'sap/ui/core/Fragment'
-], function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet, Fragment) {
+    'sap/ui/core/Fragment',
+    'sap/ui/comp/smartvariants/PersonalizableInfo'
+], function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet, Fragment, PersonalizableInfo) {
     "use strict";
 
     var EdmType = exportLibrary.EdmType;
@@ -23,6 +24,22 @@ sap.ui.define([
         onInit: function () {
             this.getRouter().getRoute("Main").attachMatched(this._onRouteMatched, this);
             this._setModel(); 
+
+            this.oSmartVariantManagement = this.byId("standardSVM");
+            this.oFilterBar = this.byId("filterbar");
+
+            var oPersInfo = new PersonalizableInfo({
+                type: "filterbar",
+                keyName: "persistencyKey",
+                control: this.oFilterBar
+            });
+
+            this.oSmartVariantManagement.addPersonalizableControl(oPersInfo);
+            this.oSmartVariantManagement.initialise(function () {}, this.oFilterBar);
+
+            this.oFilterBar.registerFetchData(this.fetchData.bind(this));
+            this.oFilterBar.registerApplyData(this.applyData.bind(this));
+            this.oFilterBar.registerGetFiltersWithValues(this.getFiltersWithValues.bind(this));
         },
 
         _onRouteMatched: function () {
@@ -97,6 +114,42 @@ sap.ui.define([
                 // buttonText: "수정"
             });
             this.getView().setModel(oChangeModel, "changeModel");
+        },
+
+        fetchData: function () {
+            var aData = this.oFilterBar.getAllFilterItems().reduce(function (aResult, oFilterItem) {
+                aResult.push({
+                    groupName: oFilterItem.getGroupName(),
+                    fieldName: oFilterItem.getName(),
+                    fieldData: oFilterItem.getControl().getSelectedKeys()
+                });
+
+                return aResult;
+            }, []);
+
+            return aData;
+        },
+
+        applyData: function (aData) {
+            aData.forEach(function (oDataObject) {
+                var oControl = this.oFilterBar.determineControlByName(oDataObject.fieldName, oDataObject.groupName);
+
+                oControl.setSelectedKeys(oDataObject.fieldData);
+            }, this);
+        },
+
+        getFiltersWithValues: function () {
+            var aFiltersWithValue = this.oFilterBar.getFilterGroupItems().reduce(function (aResult, oFilterGroupItem) {
+                var oControl = oFilterGroupItem.getControl();
+
+                if (oControl && oControl.getSelectedKeys && oControl.getSelectedKeys().length > 0) {
+                    aResult.push(oFilterGroupItem);
+                }
+
+                return aResult;
+            }, []);
+
+            return aFiltersWithValue;
         },
 
         // 버튼 및 텍스트 변경 (수정/ 저장)
@@ -598,42 +651,34 @@ sap.ui.define([
                                 };
                             });
         
-                            console.log(filteredData);
+                            console.log("filter",filteredData);
         
                             // OData 생성 요청
                             filteredData.forEach(function (oData) {
                                 this._getODataCreate(oMainModel, "/Operationcd", oData).fail(function () {
-                                    MessageBox.information("생성에 실패하였습니다.");
-                                });
-                            }.bind(this));
-        
-                            // 데이터 갱신
-                            this._getData();
-                        }.bind(this)).fail(function () {
-                            MessageBox.information("플랜트 데이터를 불러오는데 실패했습니다.");
+                                    MessageBox.information("엑셀 데이터 반영에 실패하였습니다.");
+                                    });
+                                }.bind(this));
+                                    MessageBox.information("엑셀 데이터가 반영되었습니다.");
+                                    // 데이터 갱신
+                                    this._getData();
+                            }.bind(this)).fail(function () {
+                                MessageBox.information("플랜트 데이터를 불러오는데 실패했습니다.");
                         });
-        
                     }.bind(this)); // this를 유지하기 위해 bind 사용
                 }.bind(this); // this를 유지하기 위해 bind 사용
                 reader.onerror = function (ex) {
                     console.log(ex);
                 };
-                reader.readAsBinaryString(file);
             }
         },
         // 공통 다이얼로그 및 테이블 설정 함수
         _createValueHelpDialog: function (sTitle, sKey, aColumns, aItems, sMultiInputId) {
-            var supportMultiselect = true;
     
-            // 특정 ID일 경우 다중 선택 비활성화
-            if (sMultiInputId.includes("operationid") || sMultiInputId.includes("workcenter")) {
-                supportMultiselect = false;
-            }
-
             var oDialog = new ValueHelpDialog({
                 title: sTitle,
                 key: sKey,
-                supportMultiselect,
+                supportMultiselect : true,
                 ok: function (oEvent) {
                     this.onValueHelpOkPress(oEvent, sMultiInputId);
                 }.bind(this),
@@ -731,7 +776,7 @@ sap.ui.define([
                 this.getPlantData();
             
             // 필터_공정코드
-            } else if (sMultiInputId === this.byId("VHOpCode").getId() || sMultiInputId.includes("operationid")) {
+            } else if (sMultiInputId === this.byId("VHOpCode").getId()) {
                 var aColumns = [
                     new UIColumn({
                         label: new Label({text: "공정코드"}),
@@ -751,7 +796,7 @@ sap.ui.define([
                 this.getOpCodeData();
 
             // 필터_작업장
-            } else if (sMultiInputId === this.byId("VHWC").getId() || sMultiInputId.includes("workcenter")) {
+            } else if (sMultiInputId === this.byId("VHWC").getId()) {
                 console.log(sMultiInputId);
                 var aColumns = [
                     new UIColumn({

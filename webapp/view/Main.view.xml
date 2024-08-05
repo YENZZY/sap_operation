@@ -14,14 +14,14 @@
             <f:title>
                 <f:DynamicPageTitle>
                     <f:heading>
-                        <svm:SmartVariantManagement id="svm" showExecuteOnSelection="true" />
+                        <svm:SmartVariantManagement id="standardSVM" showExecuteOnSelection="true" />
                     </f:heading>
                 </f:DynamicPageTitle>
             </f:title>
             <f:header>
                 <f:DynamicPageHeader>
                     <f:content>
-                        <fb:FilterBar id="filterbar" persistencyKey="myPersKey" useToolbar="false" search="onSearch" filterChange="onFilterChange" afterVariantLoad="onAfterVariantLoad" class="sapUiMediumMarginBottom">
+                        <fb:FilterBar id="filterbar" persistencyKey="persistencyKey" useToolbar="false" search="onSearch" filterChange="onFilterChange" afterVariantLoad="onAfterVariantLoad" class="sapUiMediumMarginBottom">
                             <fb:filterGroupItems>
                                 <fb:FilterGroupItem name="Plant" label="플랜트" groupName="Group1" visibleInFilterBar="true">
                                     <fb:control>
