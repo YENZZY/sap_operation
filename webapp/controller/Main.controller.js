@@ -94,7 +94,7 @@ sap.ui.define([
                 editable: false,
                 visibleEdit: false, // 수정 버튼 눌렀을 때 보이는 버튼: 추가, 삭제
                 visibleGet: true,   // 조회 화면에서 보이는 버튼: 업로드, 다운로드
-                buttonText: "수정"
+                // buttonText: "수정"
             });
             this.getView().setModel(oChangeModel, "changeModel");
         },
@@ -103,10 +103,10 @@ sap.ui.define([
         toggleEditMode: function(EditMode) {
             var oChangeModel = this.getView().getModel("changeModel");
         
-            oChangeModel.setProperty("/editable", EditMode);
-            oChangeModel.setProperty("/visibleGet", !EditMode);
-            oChangeModel.setProperty("/buttonText", EditMode ? "저장" : "수정");
-            oChangeModel.setProperty("/visibleEdit", EditMode);
+            oChangeModel.setProperty("/editable", EditMode); //테이블 valuehelp 수정가능
+            oChangeModel.setProperty("/visibleGet", !EditMode); //조회 버튼 비활성화
+            // oChangeModel.setProperty("/buttonText", EditMode ? "저장" : "수정");
+            oChangeModel.setProperty("/visibleEdit", EditMode); //수정 버튼 활성화
         },
 
         // 필터 검색
@@ -192,24 +192,76 @@ sap.ui.define([
         },        
 
         // 푸터 - 저장
-        onSave : function () {
-            var oChangeModel = this.getView().getModel("changeModel");
+        onSave: function () {
+            debugger;
+            var oChangeModel = this.getModel("changeModel");
             var Editable = oChangeModel.getProperty("/editable");
-
             this.toggleEditMode(!Editable);
-        },
+            
+            var oMainModel = this.getOwnerComponent().getModel();
+            var oDataModel = this.getModel("dataModel");
+            var aData = oDataModel.getData().Items;
+        
+            this._getODataRead(oMainModel, "/Operationcd").done(
+                function (aGetData) {
+                    console.log(aGetData);
+                    this._getODataDelete(oMainModel, "/Operationcd", aGetData).done(
+                        function () {
+                            // 데이터 필터링 및 중복 제거
+                            var aFilteredData = aData.filter(function (item) {
+                                return item.Plant && item.Operationid && item.Workcenter;
+                            });
+                
+                            console.log(aFilteredData);
+                
+                            var saveData = [];
+                            var duplicateData = {};
+                
+                            aFilteredData.forEach(function (item) {
+                                var opiwc = item.Operationid + "_" + item.Workcenter;
+                                if (!duplicateData[opiwc]) {
+                                    duplicateData[opiwc] = true;
+                                    saveData.push(item);
+                                }
+                            });
+                
+                            // 최종 저장할 데이터를 dataModel에 설정
+                            oDataModel.setData({ Items: saveData });
+                            console.log(oDataModel.getData());
+                
+                            // 데이터 저장 요청
+                            this._getODataCreate(oMainModel, "/Operationcd", saveData)
+                                .then(function () {
+                                    MessageBox.success("데이터가 성공적으로 저장되었습니다.");
+                                })
+                                .catch(function (oError) {
+                                    MessageBox.error("데이터 저장에 실패하였습니다. 오류: " + oError.message);
+                                })
+                                .finally(function () {
+                                    // 데이터 새로고침
+                                    this._getData();
+                                }.bind(this));
+                        }.bind(this));
+                }.bind(this));
+        },        
 
         // 푸터 - 취소 버튼
         onCancel: function () {
             this.toggleEditMode(false);
             this._getData();
         },
-        
+
+        //  수정 버튼
+        onEdit: function () {
+            this.toggleEditMode(true);
+        },
+
+        // 공정 코드 value help
         opiValueHelp: function (oEvent) {
             var sInputId = oEvent.getSource().getId();
             var oView = this.getView();
-            var rowId = oEvent.getSource().getParent().getId().split("dataTable-");
-            this.inputRow = rowId[1];
+            var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
+            this.inputRow = rowId;
         
             if (sInputId.includes("operationid")) {
                 Fragment.load({
@@ -220,7 +272,7 @@ sap.ui.define([
                     oView.addDependent(oValueHelpDialog);
                     oValueHelpDialog.open();
                 }).catch(function (oError) {
-                    console.error("Failed to load OperationId dialog:", oError);
+                    console.error("공정 코드 Value Help를 여는데 실패하였습니다.", oError);
                 });
             }
         },        
@@ -229,8 +281,8 @@ sap.ui.define([
             var sInputId = oEvent.getSource().getId();
             console.log("sid",sInputId);
             var oView = this.getView();
-            var rowId = oEvent.getSource().getParent().getId().split("dataTable-");
-            this.inputRow = rowId[1];
+            var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
+            this.inputRow = rowId;
         
             if (sInputId.includes("workcenter")) {
                 this._pWorkCenterValueHelpDialog = Fragment.load({
@@ -266,7 +318,6 @@ sap.ui.define([
                 items[this.inputRow].Operationid = oSelectedData.OperationStandardTextCode;
     
                 items[this.inputRow].OperationidText = oSelectedData.OperationStandardTextCodeName;
-
                 this.getModel("dataModel").updateBindings();
             }
             oEvent.getSource().getBinding("items").filter([]);
@@ -360,36 +411,41 @@ sap.ui.define([
             }
         },
 
-        // 데이터 추가 버튼 +
-        onAdd: function () {
-            var oMainModel = this.getOwnerComponent().getModel();
+     // 데이터 추가 버튼 +
+    onAdd: function () {
+        var oMainModel = this.getOwnerComponent().getModel();
 
-            // OData 모델에서 플랜트 데이터를 읽어옴
-            this._getODataRead(oMainModel, "/Plant").done(
-                function (aPlantData) {
-                    var sPlant = aPlantData.length > 0 ? aPlantData[0].Plant : "";
+        // OData 모델에서 플랜트 데이터를 읽어옴
+        this._getODataRead(oMainModel, "/Plant").done(
+            function (aPlantData) {
+                var sPlant = aPlantData.length > 0 ? aPlantData[0].Plant : "";
 
-                    var oItem = {
-                        Plant: sPlant,
-                        Operationid: "",
-                        OperationidText: "",
-                        Workcenter: "",
-                        WorkcenterText: ""
-                    };
+                var oItem = {
+                    Plant: sPlant,
+                    Operationid: "",
+                    OperationidText: "",
+                    Workcenter: "",
+                    WorkcenterText: ""
+                };
 
-                    // dataModel에서 기존 데이터를 가져옴
-                    var oDataModel = this.getModel("dataModel");
-                    var aItems = oDataModel.getProperty("/Items") || [];
+                // dataModel에서 기존 데이터를 가져옴
+                var oDataModel = this.getModel("dataModel");
+                var aItems = oDataModel.getProperty("/Items") || [];
 
-                    // 새로운 행 추가
-                    aItems.push(oItem);
+                // 새로운 행을 맨 앞에 추가
+                aItems.unshift(oItem);
 
-                    oDataModel.setProperty("/Items", aItems);
-                }.bind(this)
-            ).fail(function () {
-                MessageBox.information("플랜트 데이터를 불러오는데 실패했습니다.");
-            });
-        },
+                oDataModel.setProperty("/Items", aItems);
+
+                // 바인딩 업데이트
+                oDataModel.updateBindings();
+                
+            }.bind(this)
+        ).fail(function () {
+            MessageBox.information("플랜트 데이터를 불러오는데 실패했습니다.");
+        });
+    },
+
 
         // 데이터 삭제 버튼
         onDelete: function () {

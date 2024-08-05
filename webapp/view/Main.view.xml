@@ -44,7 +44,7 @@
                 </f:DynamicPageHeader>
             </f:header>
             <f:content>
-                <Table id="dataTable" inset="false" width="100%" mode="MultiSelect" items="{path: 'dataModel>/Items', sorter: {path: 'OperationStandardTextCode'}}">
+                <Table id="dataTable" inset="false" width="100%" mode="MultiSelect" items="{path: 'dataModel>/Items', sorter: {path: 'Operationid'}}">
                     <headerToolbar>
                         <OverflowToolbar>
                             <content>
@@ -105,7 +105,8 @@
             <f:footer>
                 <OverflowToolbar>
                     <ToolbarSpacer/>
-                    <Button id="btnSave" type="Emphasized" text="{changeModel>/buttonText}" press="onSave"/>
+                    <Button id="btnEdit" type="Emphasized" text="수정" press="onEdit" visible="{changeModel>/visibleGet}"/>
+                    <Button id="btnSave" type="Emphasized" text="저장" press="onSave" visible="{changeModel>/visibleEdit}"/>
                     <Button type="Ghost" text="취소" press="onCancel"/>
                 </OverflowToolbar>
             </f:footer>

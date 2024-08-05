@@ -14,7 +14,7 @@
 			sorter : {
 				path : 'OperationStandardTextCode',
 				descending : false
-			}
+			} 
 		}">
 		<ColumnListItem selected="{selectedItem}">
 			<cells>
