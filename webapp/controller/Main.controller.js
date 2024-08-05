@@ -191,9 +191,7 @@ sap.ui.define([
             }
         },        
 
-        // 푸터 - 저장
         onSave: function () {
-            debugger;
             var oChangeModel = this.getModel("changeModel");
             var Editable = oChangeModel.getProperty("/editable");
             this.toggleEditMode(!Editable);
@@ -202,47 +200,54 @@ sap.ui.define([
             var oDataModel = this.getModel("dataModel");
             var aData = oDataModel.getData().Items;
         
-            this._getODataRead(oMainModel, "/Operationcd").done(
-                function (aGetData) {
-                    console.log(aGetData);
-                    this._getODataDelete(oMainModel, "/Operationcd", aGetData).done(
-                        function () {
-                            // 데이터 필터링 및 중복 제거
-                            var aFilteredData = aData.filter(function (item) {
-                                return item.Plant && item.Operationid && item.Workcenter;
-                            });
-                
-                            console.log(aFilteredData);
-                
-                            var saveData = [];
-                            var duplicateData = {};
-                
-                            aFilteredData.forEach(function (item) {
-                                var opiwc = item.Operationid + "_" + item.Workcenter;
-                                if (!duplicateData[opiwc]) {
-                                    duplicateData[opiwc] = true;
-                                    saveData.push(item);
-                                }
-                            });
-                
-                            // 최종 저장할 데이터를 dataModel에 설정
-                            oDataModel.setData({ Items: saveData });
-                            console.log(oDataModel.getData());
-                
-                            // 데이터 저장 요청
-                            this._getODataCreate(oMainModel, "/Operationcd", saveData)
-                                .then(function () {
-                                    MessageBox.success("데이터가 성공적으로 저장되었습니다.");
-                                })
-                                .catch(function (oError) {
-                                    MessageBox.error("데이터 저장에 실패하였습니다. 오류: " + oError.message);
-                                })
-                                .finally(function () {
-                                    // 데이터 새로고침
-                                    this._getData();
-                                }.bind(this));
-                        }.bind(this));
+            // 기존 데이터 삭제
+            this._getODataRead(oMainModel, "/Operationcd").done(function (aGetData) {
+                var deletePromises = aGetData.map(function (item) {
+                    var suuid = item.Uuid;
+                    console.log(suuid);
+                    var deleteUrl = "/Operationcd(guid'" + suuid + "')"; // URL 포맷 수정
+                    return this._getODataDelete(oMainModel, deleteUrl);
                 }.bind(this));
+        
+                // 모든 삭제가 완료된 후 새 데이터 저장
+                $.when.apply($, deletePromises).done(function () {
+                    // 데이터 필터링 및 중복 제거
+                    var aFilteredData = aData.filter(function (item) {
+                        return item.Plant && item.Operationid && item.Workcenter;
+                    });
+        
+                    console.log(aFilteredData);
+        
+                    var saveData = [];
+                    var duplicateData = {};
+        
+                    aFilteredData.forEach(function (item) {
+                        var opiwc = item.Operationid + "_" + item.Workcenter;
+                        if (!duplicateData[opiwc]) {
+                            duplicateData[opiwc] = true;
+                            saveData.push({
+                                Operationid: item.Operationid,
+                                Workcenter: item.Workcenter,
+                                Plant: item.Plant
+                            });
+                        }
+                    });
+        
+                    console.log("sav", saveData);
+        
+                    // 데이터 저장 요청
+                    saveData.forEach(function (oData) {
+                        this._getODataCreate(oMainModel, "/Operationcd", oData).fail(function () {
+                            MessageBox.information("데이터 저장에 실패하였습니다.");
+                        });
+                    }.bind(this));
+                    
+                    // 데이터 새로고침
+                    this._getData();
+                }.bind(this)).fail(function (oError) {
+                    MessageBox.error("삭제 중 오류가 발생했습니다. 오류: " + oError.message);
+                });
+            }.bind(this));
         },        
 
         // 푸터 - 취소 버튼
