@@ -640,18 +640,18 @@ sap.ui.define([
         
         _import: function (file) {
             var oMainModel = this.getOwnerComponent().getModel();
-            
+        
             if (file && window.FileReader) {
                 var reader = new FileReader();
         
                 reader.onload = function (e) {
                     var data = e.target.result;
                     var workbook = XLSX.read(data, { type: 'binary' });
-                    
+        
                     workbook.SheetNames.forEach(function (sheetName) {
                         var excelData = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
                         console.log(excelData);
-                        
+        
                         // Plant 값을 가져오기
                         this._getODataRead(oMainModel, "/Plant").done(function (aPlantData) {
                             var sPlant = aPlantData[0].Plant;
@@ -667,56 +667,62 @@ sap.ui.define([
         
                             console.log(filteredData);
         
-                            var itemdata = this.getModel("dataModel").getData().Items;
-                            console.log("item",itemdata);            
-                                // Operation ID 데이터 필터링
-                                var aFilterOpi = itemdata.filter(function (item) {
-                                    return item.Operationid && item.Workcenter;
-                                });
-                                console.log("afopi",aFilterOpi);
-                                // 가져온 데이터를 필터링
-                                var aFilteredData = filteredData.filter(function (item) {
-                                    return item.Operationid && item.Workcenter;
-                                });
-                                console.log("aFilteredData",aFilteredData);
-                                // 중복 확인을 위한 객체 생성
-                                var duplicateData = {};
-                                var saveData = [];
+                            // 공정코드와 작업장 모델 데이터를 가져오기
+                            var opiModel = this.getModel("opiModel").getData();
+                            var wcModel = this.getModel("wcModel").getData();
         
-                                aFilteredData.forEach(function (item) {
-                                    var opiwcKey = item.Operationid + "_" + item.Workcenter;
+                            // 공정코드와 작업장 리스트를 생성
+                            var validOperationIds = opiModel.map(function (item) { return item.OperationStandardTextCode; });
+                            var validWorkcenters = wcModel.map(function (item) { return item.WorkCenter; });
         
-                                    if (!duplicateData[opiwcKey]) {
-                                        duplicateData[opiwcKey] = true;
-                                        
-                                        // aFilterOpi에 존재하지 않는지 확인
-                                        var existsInFilterOpi = aFilterOpi.some(function (filterItem) {
-                                            return filterItem.Operationid === item.Operationid &&
-                                                   filterItem.Workcenter === item.Workcenter 
-                                                
-                                        });
-                                        console.log("existsInFilterOpi",existsInFilterOpi);
-                                        if (!existsInFilterOpi) {
-                                            saveData.push({
-                                                Operationid: item.Operationid,
-                                                Workcenter: item.Workcenter,
-                                                Plant: sPlant
-                                            });
-                                        }
-                                    }
-                                });
+                            // 공정코드와 작업장 모델 데이터를 필터링
+                            var aFilteredData = filteredData.filter(function (item) {
+                                return validOperationIds.includes(item.Operationid) && validWorkcenters.includes(item.Workcenter);
+                            });
+                            console.log("aF",aFilteredData);
+
+                            //기존 데이터에 있는지 확인
+                            var aFilterOpi = this.getModel("dataModel").getData().Items.filter(function (item) {
+                                return item.Operationid && item.Workcenter;
+                            });
+                            // 중복 확인을 위한 객체 생성
+                            var duplicateData = {};
+                            var saveData = [];
         
-                                // 데이터 저장 요청
-                                saveData.forEach(function (oData) {
-                                    this._getODataCreate(oMainModel, "/Operationcd", oData).fail(function () {
-                                        MessageBox.information("엑셀 업로드에 실패하였습니다.");
+                            aFilteredData.forEach(function (item) {
+                                var opiwcKey = item.Operationid + "_" + item.Workcenter;
+        
+                                if (!duplicateData[opiwcKey]) {
+                                    duplicateData[opiwcKey] = true;
+        
+                                    // aFilterOpi에 존재하지 않는지 확인
+                                    var existsInFilterOpi = aFilterOpi.some(function (filterItem) {
+                                        return filterItem.Operationid === item.Operationid &&
+                                               filterItem.Workcenter === item.Workcenter;
                                     });
-                                }.bind(this));
-                                MessageBox.information("엑셀 업로드에 성공하였습니다.");
-                                // 데이터 새로고침
-                                this._getData();
-                            }.bind(this)); // 'this' 컨텍스트를 유지
+                                    console.log("existsInFilterOpi", existsInFilterOpi);
+                                    if (!existsInFilterOpi) {
+                                        saveData.push({
+                                            Operationid: item.Operationid,
+                                            Workcenter: item.Workcenter,
+                                            Plant: sPlant
+                                        });
+                                    }
+                                }
+                            });
+        
+                            // 데이터 저장 요청
+                            saveData.forEach(function (oData) {
+                                this._getODataCreate(oMainModel, "/Operationcd", oData).fail(function () {
+                                    MessageBox.information("엑셀 업로드에 실패하였습니다.");
+                                });
+                            }.bind(this));
+                            MessageBox.information("엑셀 업로드에 성공하였습니다.");
+        
+                            // 데이터 새로고침
+                            this._getData();
                         }.bind(this)); // 'this' 컨텍스트를 유지
+                    }.bind(this)); // 'this' 컨텍스트를 유지
                 }.bind(this); // 'this' 컨텍스트를 유지
         
                 reader.readAsBinaryString(file);
