@@ -8,6 +8,7 @@
     xmlns:fb="sap.ui.comp.filterbar"
     xmlns:u="sap.ui.unified"
     xmlns:svm="sap.ui.comp.smartvariants"
+    xmlns:vm="sap.ui.fl.variants"
     >
     <!-- <Page id="page" title="{i18n>title}"> -->
         <f:DynamicPage showFooter="true">
@@ -49,12 +50,14 @@
                         <OverflowToolbar>
                             <content>
                                 <Title text="작업 지시" level="H2"/>
+                                <vm:VariantManagement id="tableSVM" for="dataTable"/>
                                 <ToolbarSpacer/>
                                 <Button id="add" text="+" press="onAdd" visible="{changeModel>/visibleEdit}"/>
                                 <Button id="delete" text="삭제" press="onDelete" visible="{changeModel>/visibleEdit}"/>
                                 <u:FileUploader id="upload" sameFilenameAllowed="true" iconOnly="false" buttonOnly="true" buttonText="업로드" fileType="XLSX,xlsx"
 								change="onUpload" visible="{changeModel>/visibleGet}"/>
                                 <Button id="download" text="다운로드" press="onDownload" visible="{changeModel>/visibleGet}"/>
+                                <Button icon="sap-icon://action-settings" press="openPersoDialog" tooltip="Settings"/>
                             </content>
                         </OverflowToolbar>
                     </headerToolbar>

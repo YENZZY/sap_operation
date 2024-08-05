@@ -14,8 +14,9 @@ sap.ui.define([
     'sap/m/Text',
     "sap/ui/export/Spreadsheet",
     'sap/ui/core/Fragment',
-    'sap/ui/comp/smartvariants/PersonalizableInfo'
-], function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet, Fragment, PersonalizableInfo) {
+    'sap/ui/comp/smartvariants/PersonalizableInfo',
+    'sap/m/p13n/Engine'
+], function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet, Fragment, PersonalizableInfo, Engine) {
     "use strict";
 
     var EdmType = exportLibrary.EdmType;
@@ -26,8 +27,10 @@ sap.ui.define([
             this._setModel(); 
 
             this.oSmartVariantManagement = this.byId("standardSVM");
+            this.oSmartVariantManagement1 = this.byId("tableSVM");
+           
             this.oFilterBar = this.byId("filterbar");
-
+            
             var oPersInfo = new PersonalizableInfo({
                 type: "filterbar",
                 keyName: "persistencyKey",
@@ -150,6 +153,16 @@ sap.ui.define([
             }, []);
 
             return aFiltersWithValue;
+        },
+
+        openPersoDialog: function(oEvt) {
+            var oTable = this.byId("dataTable");
+
+            Engine.getInstance().show(oTable, ["columns"], {
+                contentHeight: "35rem",
+                contentWidth: "32rem",
+                source: oEvt.getSource()
+            });
         },
 
         // 버튼 및 텍스트 변경 (수정/ 저장)
@@ -627,22 +640,23 @@ sap.ui.define([
         
         _import: function (file) {
             var oMainModel = this.getOwnerComponent().getModel();
+            
             if (file && window.FileReader) {
                 var reader = new FileReader();
+        
                 reader.onload = function (e) {
                     var data = e.target.result;
-                    var workbook = XLSX.read(data, {
-                        type: 'binary'
-                    });
+                    var workbook = XLSX.read(data, { type: 'binary' });
+                    
                     workbook.SheetNames.forEach(function (sheetName) {
                         var excelData = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
                         console.log(excelData);
-        
-                        // 필드 값을 추출하기 전에 Plant 값을 가져오기
+                        
+                        // Plant 값을 가져오기
                         this._getODataRead(oMainModel, "/Plant").done(function (aPlantData) {
-                            var sPlant =aPlantData[0].Plant;
+                            var sPlant = aPlantData[0].Plant;
         
-                            // 필드 값 추출 및 Plant 값 추가
+                            // 필드 값을 추출하고 Plant 값을 추가
                             var filteredData = excelData.map(function (row) {
                                 return {
                                     Plant: sPlant, // Plant 값을 추가
@@ -651,27 +665,64 @@ sap.ui.define([
                                 };
                             });
         
-                            console.log("filter",filteredData);
+                            console.log(filteredData);
         
-                            // OData 생성 요청
-                            filteredData.forEach(function (oData) {
-                                this._getODataCreate(oMainModel, "/Operationcd", oData).fail(function () {
-                                    MessageBox.information("엑셀 데이터 반영에 실패하였습니다.");
+                            var itemdata = this.getModel("dataModel").getData().Items;
+                            console.log("item",itemdata);            
+                                // Operation ID 데이터 필터링
+                                var aFilterOpi = itemdata.filter(function (item) {
+                                    return item.Operationid && item.Workcenter;
+                                });
+                                console.log("afopi",aFilterOpi);
+                                // 가져온 데이터를 필터링
+                                var aFilteredData = filteredData.filter(function (item) {
+                                    return item.Operationid && item.Workcenter;
+                                });
+                                console.log("aFilteredData",aFilteredData);
+                                // 중복 확인을 위한 객체 생성
+                                var duplicateData = {};
+                                var saveData = [];
+        
+                                aFilteredData.forEach(function (item) {
+                                    var opiwcKey = item.Operationid + "_" + item.Workcenter;
+        
+                                    if (!duplicateData[opiwcKey]) {
+                                        duplicateData[opiwcKey] = true;
+                                        
+                                        // aFilterOpi에 존재하지 않는지 확인
+                                        var existsInFilterOpi = aFilterOpi.some(function (filterItem) {
+                                            return filterItem.Operationid === item.Operationid &&
+                                                   filterItem.Workcenter === item.Workcenter 
+                                                
+                                        });
+                                        console.log("existsInFilterOpi",existsInFilterOpi);
+                                        if (!existsInFilterOpi) {
+                                            saveData.push({
+                                                Operationid: item.Operationid,
+                                                Workcenter: item.Workcenter,
+                                                Plant: sPlant
+                                            });
+                                        }
+                                    }
+                                });
+        
+                                // 데이터 저장 요청
+                                saveData.forEach(function (oData) {
+                                    this._getODataCreate(oMainModel, "/Operationcd", oData).fail(function () {
+                                        MessageBox.information("엑셀 업로드에 실패하였습니다.");
                                     });
                                 }.bind(this));
-                                    MessageBox.information("엑셀 데이터가 반영되었습니다.");
-                                    // 데이터 갱신
-                                    this._getData();
-                            }.bind(this)).fail(function () {
-                                MessageBox.information("플랜트 데이터를 불러오는데 실패했습니다.");
-                        });
-                    }.bind(this)); // this를 유지하기 위해 bind 사용
-                }.bind(this); // this를 유지하기 위해 bind 사용
-                reader.onerror = function (ex) {
-                    console.log(ex);
-                };
+                                MessageBox.information("엑셀 업로드에 성공하였습니다.");
+                                // 데이터 새로고침
+                                this._getData();
+                            }.bind(this)); // 'this' 컨텍스트를 유지
+                        }.bind(this)); // 'this' 컨텍스트를 유지
+                }.bind(this); // 'this' 컨텍스트를 유지
+        
+                reader.readAsBinaryString(file);
             }
-        },
+        },        
+
         // 공통 다이얼로그 및 테이블 설정 함수
         _createValueHelpDialog: function (sTitle, sKey, aColumns, aItems, sMultiInputId) {
     
