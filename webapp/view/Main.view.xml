@@ -44,7 +44,7 @@
                 </f:DynamicPageHeader>
             </f:header>
             <f:content>
-                <Table id="dataTable" inset="false" width="100%" mode="MultiSelect" items="{path: 'dataModel>/Items', sorter: {path: 'Operationid'}}">
+                <Table id="dataTable" inset="false" width="100%" mode="MultiSelect" items="{path: 'dataModel>/Items', sorter: [{path: 'Operationid', descending: false}, {path: 'Workcenter', descending: false}]}">
                     <headerToolbar>
                         <OverflowToolbar>
                             <content>

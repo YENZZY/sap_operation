@@ -204,7 +204,6 @@ sap.ui.define([
             this._getODataRead(oMainModel, "/Operationcd").done(function (aGetData) {
                 var deletePromises = aGetData.map(function (item) {
                     var suuid = item.Uuid;
-                    console.log(suuid);
                     var deleteUrl = "/Operationcd(guid'" + suuid + "')"; // URL 포맷 수정
                     return this._getODataDelete(oMainModel, deleteUrl);
                 }.bind(this));
@@ -215,8 +214,6 @@ sap.ui.define([
                     var aFilteredData = aData.filter(function (item) {
                         return item.Plant && item.Operationid && item.Workcenter;
                     });
-        
-                    console.log(aFilteredData);
         
                     var saveData = [];
                     var duplicateData = {};
@@ -232,8 +229,6 @@ sap.ui.define([
                             });
                         }
                     });
-        
-                    console.log("sav", saveData);
         
                     // 데이터 저장 요청
                     saveData.forEach(function (oData) {
