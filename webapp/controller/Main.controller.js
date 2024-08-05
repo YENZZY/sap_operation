@@ -236,7 +236,7 @@ sap.ui.define([
                             MessageBox.information("데이터 저장에 실패하였습니다.");
                         });
                     }.bind(this));
-                    
+                    MessageBox.information("데이터 저장에 성공하였습니다.");
                     // 데이터 새로고침
                     this._getData();
                 }.bind(this)).fail(function (oError) {
@@ -446,49 +446,54 @@ sap.ui.define([
         });
     },
 
+    // 데이터 삭제 버튼
+    onDelete: function () {
+        var oTable = this.byId("dataTable");
+        var aSelectedItems = oTable.getSelectedItems(); // 선택된 항목을 가져오기
+        var oDataModel = this.getModel("dataModel");
+        var aData = oDataModel.getProperty("/Items");
 
-        // 데이터 삭제 버튼
-        onDelete: function () {
-    
-            var oTable = this.byId("dataTable");
-            var aSelectedItems = oTable.getSelectedItems(); // 선택된 항목을 가져오기
-            var oDataModel = this.getModel("dataModel");
-            var aData = oDataModel.getProperty("/Items");
+        if (aSelectedItems.length === 0) {
+            MessageBox.information("선택한 항목이 없습니다.");
+            return;
+        }
+
+        // 삭제할 항목 배열 생성
+        if (!this.aItemsToDelete) {
+            this.aItemsToDelete = [];
+        }
+
+        // 선택된 항목의 데이터를 aItemsToDelete 배열에 추가
+        aSelectedItems.forEach(function (oItem) {
+            var oContext = oItem.getBindingContext("dataModel");
+            var oRowData = oContext.getObject();
+            this.aItemsToDelete.push(oRowData);
+            console.log(oRowData);
+        }.bind(this));
+
+        // 선택된 항목을 모델 데이터에서 제거
+        var aIndexesToDelete = aSelectedItems.map(function (oItem) {
+            var oContext = oItem.getBindingContext("dataModel");
+            var sPath = oContext.getPath();
+            return parseInt(sPath.split('/').pop(), 10); // 인덱스를 숫자로 변환
+        });
+
+        // 인덱스를 역순으로 정렬하여 제거
+        aIndexesToDelete.sort(function (a, b) {
+            return b - a;
+        }).forEach(function (index) {
+            aData.splice(index, 1); // 1개의 항목을 제거
+        });
+
+        // 모델의 데이터 업데이트
+        oDataModel.setProperty("/Items", aData);
+
+        // 모델 새로고침
+        oDataModel.refresh();
         
-            if (aSelectedItems.length === 0) {
-                MessageBox.information("선택한 항목이 없습니다.");
-                return;
-            }
-        
-            // 삭제할 항목 배열 생성
-            if (!this.aItemsToDelete) {
-                this.aItemsToDelete = [];
-            }
-        
-            // 선택된 항목의 데이터를 aItemsToDelete 배열에 추가
-            aSelectedItems.forEach(function (oItem) {
-                var oContext = oItem.getBindingContext("dataModel");
-                var oRowData = oContext.getObject();
-                this.aItemsToDelete.push(oRowData);
-                console.log(oRowData);
-            }.bind(this));
-        
-            // 선택된 항목을 모델 데이터에서 제거
-            aSelectedItems.reverse().forEach(function (oItem) {
-                var oContext = oItem.getBindingContext("dataModel");
-                var index = oContext.getPath().split('/').pop(); // 인덱스를 계산
-                aData.splice(index, 1);
-            });
-        
-            // 모델의 데이터 업데이트
-            oDataModel.setProperty("/Items", aData);
-        
-            // 모델 새로고침
-            oDataModel.refresh();
-            
-            // 선택 해제
-            oTable.removeSelections(true);
-        },        
+        // 선택 해제
+        oTable.removeSelections(true);
+    },   
         
         // 엑셀 다운로드
         onDownload: function () {
