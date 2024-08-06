@@ -17,7 +17,7 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/sap/opu/odata/sap/ZUIPP_OPERATIONCD/",
+        "uri": "/sap/opu/odata/sap/ZSBPP_OPERATIONCD/",
         "type": "OData",
         "settings": {
           "annotations": [],
@@ -25,10 +25,24 @@
           "odataVersion": "2.0"
         }
       }
+    },
+    "crossNavigation": {
+      "inbounds": {
+        "clc-operation": {
+          "semanticObject": "clc",
+          "action": "operation",
+          "title": "{{flpTitle}}",
+          "subTitle": "{{flpSubtitle}}",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
+        }
+      }
     }
   },
   "sap.ui": {
-    "fullWidth" : true,
+    "fullWidth": true,
     "technology": "UI5",
     "icons": {
       "icon": "",

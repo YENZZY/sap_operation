@@ -49,7 +49,8 @@
                     <headerToolbar>
                         <OverflowToolbar>
                             <content>
-                                <Title text="작업 지시" level="H2"/>
+                                <Title text="작업 지시"/>
+                                <ToolbarSeparator/>
                                 <vm:VariantManagement id="tableSVM" for="dataTable"/>
                                 <ToolbarSpacer/>
                                 <Button id="add" text="+" press="onAdd"/>

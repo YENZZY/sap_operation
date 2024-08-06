@@ -14,10 +14,10 @@ sap.ui.define([
     'sap/m/Text',
     "sap/ui/export/Spreadsheet",
     'sap/ui/core/Fragment',
+    "sap/ui/core/ValueState",
     'sap/ui/comp/smartvariants/PersonalizableInfo',
-    'sap/m/p13n/Engine',
-    "sap/ui/core/ValueState"
-], function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet, Fragment, PersonalizableInfo, Engine, ValueState) {
+    'sap/m/p13n/Engine'
+], function (Controller, JSONModel, MessageBox, ValueHelpDialog, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet, Fragment, ValueState, PersonalizableInfo, Engine, SelectionController, SortController, GroupController, FilterController, MetadataHelper, Sorter, ColumnWidthController) {
     "use strict";
 
     var EdmType = exportLibrary.EdmType;
@@ -42,6 +42,158 @@ sap.ui.define([
             this.oFilterBar.registerFetchData(this.fetchData.bind(this));
             this.oFilterBar.registerApplyData(this.applyData.bind(this));
             this.oFilterBar.registerGetFiltersWithValues(this.getFiltersWithValues.bind(this));
+
+            // table standard (start)
+            //this._registerForP13n(); // 테이블을 개인화 엔진에 등록하는 것
+        },
+
+        // vm standard  개인화 엔진을 설정하고 테이블을 등록
+        _registerForP13n: function() {
+            const oTable = this.byId("dataTable");
+        
+            this.oMetadataHelper = new MetadataHelper([
+                { key: "Plant", label: "플랜트", path: "Plant" },
+                { key: "Operationid", label: "공정코드", path: "Operationid" },
+                { key: "OperationidText", label: "공정명", path: "OperationidText" },
+                { key: "Workcenter", label: "작업장", path: "Workcenter" },
+                { key: "WorkcenterText", label: "작업장명", path: "WorkcenterText" }
+            ]);
+        
+            Engine.getInstance().register(oTable, {
+                helper: this.oMetadataHelper,
+                controller: {
+                    Columns: new SelectionController({ targetAggregation: "columns", control: oTable }),
+                    Sorter: new SortController({ control: oTable }),
+                    Groups: new GroupController({ control: oTable }),
+                    ColumnWidth: new ColumnWidthController({ control: oTable }),
+                    Filter: new FilterController({ control: oTable })
+                }
+            });
+        
+            Engine.getInstance().attachStateChange(this.handleStateChange.bind(this));
+        },
+
+        // handleStateChange 함수는 개인화 상태가 변경될 때 호출, 변경된 상태를 반영하여 테이블을 업데이트
+        handleStateChange: function(oEvt) {
+            const oTable = this.byId("dataTable");
+            const oState = oEvt.getParameter("state");
+        
+            if (!oState) {
+                return;
+            }
+        
+            // 선택된 상태에 따라 열을 업데이트합니다.
+            this.updateColumns(oState);
+        
+            // 필터 및 정렬기 생성
+            const aFilter = this.createFilters(oState);
+            const aGroups = this.createGroups(oState);
+            const aSorter = this.createSorters(oState, aGroups);
+        
+            const aCells = oState.Columns.map(function(oColumnState) {
+                return new Text({ text: "{" + this.oMetadataHelper.getProperty(oColumnState.key).path + "}" });
+            }.bind(this));
+        
+            // 업데이트된 셀 템플릿으로 테이블을 다시 바인딩합니다.
+            oTable.bindItems({
+                templateShareable: false,
+                path: '/Items',
+                sorter: aSorter.concat(aGroups),
+                filters: aFilter,
+                template: new ColumnListItem({ cells: aCells })
+            });
+        },
+
+        //createFilters 함수는 현재 상태를 기반으로 필터를 생성
+        createFilters: function(oState) {
+            const aFilter = [];
+            Object.keys(oState.Filter).forEach((sFilterKey) => {
+                const filterPath = this.oMetadataHelper.getProperty(sFilterKey).path;
+        
+                oState.Filter[sFilterKey].forEach(function(oConditon) {
+                    aFilter.push(new Filter(filterPath, oConditon.operator, oConditon.values[0]));
+                });
+            });
+        
+            this.byId("filterInfo").setVisible(aFilter.length > 0);
+        
+            return aFilter;
+        },
+
+        //createSorters 함수는 현재 상태를 기반으로 정렬기를 생성
+        createSorters: function(oState, aExistingSorter) {
+            const aSorter = aExistingSorter || [];
+            oState.Sorter.forEach(function(oSorter) {
+                const oExistingSorter = aSorter.find(function(oSort) {
+                    return oSort.sPath === this.oMetadataHelper.getProperty(oSorter.key).path;
+                }.bind(this));
+        
+                if (oExistingSorter) {
+                    oExistingSorter.bDescending = !!oSorter.descending;
+                } else {
+                    aSorter.push(new Sorter(this.oMetadataHelper.getProperty(oSorter.key).path, oSorter.descending));
+                }
+            }.bind(this));
+        
+            oState.Sorter.forEach(function(oSorter) {
+                const oCol = this.byId(oSorter.key);
+                if (oSorter.sorted !== false) {
+                    oCol.setSortIndicator(oSorter.descending ? coreLibrary.SortOrder.Descending : coreLibrary.SortOrder.Ascending);
+                }
+            }.bind(this));
+        
+            return aSorter;
+        },
+        
+        // createGroups 함수는 현재 상태를 기반으로 그룹을 생성
+        createGroups: function(oState) {
+            const aGroupings = [];
+            oState.Groups.forEach(function(oGroup) {
+                aGroupings.push(new Sorter(this.oMetadataHelper.getProperty(oGroup.key).path, false, true));
+            }.bind(this));
+        
+            oState.Groups.forEach(function(oSorter) {
+                const oCol = this.byId(oSorter.key);
+                oCol.data("grouped", true);
+            }.bind(this));
+        
+            return aGroupings;
+        },
+
+        // updateColumns 함수는 현재 상태를 기반으로 열을 업데이트
+        updateColumns: function(oState) {
+            const oTable = this.byId("dataTable");
+        
+            oTable.getColumns().forEach(function(oColumn, iIndex) {
+                oColumn.setVisible(false);
+                oColumn.setWidth(oState.ColumnWidth[this._getKey(oColumn)]);
+                oColumn.setSortIndicator(coreLibrary.SortOrder.None);
+                oColumn.data("grouped", false);
+            }.bind(this));
+        
+            oState.Columns.forEach(function(oProp, iIndex) {
+                const oCol = this.byId(oProp.key);
+                oCol.setVisible(true);
+        
+                oTable.removeColumn(oCol);
+                oTable.insertColumn(oCol, iIndex);
+            }.bind(this));
+        },
+
+        // beforeOpenColumnMenu 함수는 열 메뉴가 열리기 전에 호출되며, 메뉴 항목을 설정
+        beforeOpenColumnMenu: function(oEvt) {
+            const oMenu = this.byId("menu");
+            const oColumn = oEvt.getParameter("openBy");
+            const oSortItem = oMenu.getQuickActions()[0].getItems()[0];
+            const oGroupItem = oMenu.getQuickActions()[1].getItems()[0];
+        
+            oSortItem.setKey(this._getKey(oColumn));
+            oSortItem.setLabel(oColumn.getHeader().getText());
+            oSortItem.setSortOrder(oColumn.getSortIndicator());
+        
+            oGroupItem.setKey(this._getKey(oColumn));
+            oGroupItem.setLabel(oColumn.getHeader().getText());
+            oGroupItem.setGrouped(oColumn.data("grouped"));
         },
 
         _onRouteMatched: function () {
