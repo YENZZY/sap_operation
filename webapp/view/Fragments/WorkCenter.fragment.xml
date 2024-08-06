@@ -1,6 +1,7 @@
 <core:FragmentDefinition
 	xmlns="sap.m"
-	xmlns:core="sap.ui.core">
+	xmlns:core="sap.ui.core"
+>
 	<TableSelectDialog
 		noDataText="작업장 데이터가 없습니다."
 		title="작업장"

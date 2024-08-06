@@ -89,8 +89,22 @@
                                     valueHelpRequest="opiValueHelp"
                                     value="{dataModel>Operationid}"
                                     editable="{changeModel>/editable}"
-                                />
-                                <Text text="{dataModel>OperationidText}" wrapping="false"/>
+                                    suggestionItemSelected="onOpiSelected"
+                                    showSuggestion="true"
+                                    suggestionItems="{
+                                        path: 'opiModel>/',
+                                        templateShareable: false
+                                    }"
+                                    change="handleValidation"
+                                    liveChange="onOpiLiveChange"
+                                >
+                                 <suggestionItems>
+                                        <SuggestionItem text="{opiModel>OperationStandardTextCode}" key="{opiModel>OperationStandardTextCode}" />
+                                    </suggestionItems>
+                                </Input>
+
+                                <Text text="{dataModel>OperationidText}" wrapping="false"/> 
+                                <!-- suggest="wchandleSuggest" -->
                                 <Input
                                     id="workcenter"
                                     type="Text"
@@ -98,7 +112,20 @@
                                     valueHelpRequest="wcValueHelp"
                                     value="{dataModel>Workcenter}"
                                     editable="{changeModel>/editable}"
-                                />
+                                    suggestionItemSelected="onWcSelected"
+                                    showSuggestion="true"
+                                    suggestionItems="{
+                                        path: 'wcModel>/',
+                                        templateShareable: false
+                                    }"
+                                    change="wchandleValidation"
+                                    liveChange="onWcLiveChange"
+                                >
+                                    <suggestionItems>
+                                        <SuggestionItem text="{wcModel>WorkCenter}" key="{wcModel>WorkCenter}" />
+                                    </suggestionItems>
+                                </Input>
+                                   
                                 <Text text="{dataModel>WorkcenterText}" wrapping="false"/>
                             </cells>
                         </ColumnListItem>
