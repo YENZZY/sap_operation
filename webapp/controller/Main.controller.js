@@ -668,136 +668,167 @@ sap.ui.define([
             }
         },
 
-     // 데이터 추가 버튼 +
-    onAdd: function () {
-        var oMainModel = this.getOwnerComponent().getModel();
+        // 데이터 추가 버튼 +
+        onAdd: function () {
+            var oMainModel = this.getOwnerComponent().getModel();
 
-        // OData 모델에서 플랜트 데이터를 읽어옴
-        this._getODataRead(oMainModel, "/Plant").done(
-            function (aPlantData) {
-                var sPlant = aPlantData.length > 0 ? aPlantData[0].Plant : "";
+            // OData 모델에서 플랜트 데이터를 읽어옴
+            this._getODataRead(oMainModel, "/Plant").done(
+                function (aPlantData) {
+                    var sPlant = aPlantData.length > 0 ? aPlantData[0].Plant : "";
 
-                var oItem = {
-                    Plant: sPlant,
-                    Operationid: "",
-                    OperationidText: "",
-                    Workcenter: "",
-                    WorkcenterText: ""
-                };
+                    var oItem = {
+                        Plant: sPlant,
+                        Operationid: "",
+                        OperationidText: "",
+                        Workcenter: "",
+                        WorkcenterText: ""
+                    };
 
-                // dataModel에서 기존 데이터를 가져옴
-                var oDataModel = this.getModel("dataModel");
-                var aItems = oDataModel.getProperty("/Items") || [];
+                    // dataModel에서 기존 데이터를 가져옴
+                    var oDataModel = this.getModel("dataModel");
+                    var aItems = oDataModel.getProperty("/Items") || [];
 
-                // 새로운 행을 맨 앞에 추가
-                aItems.unshift(oItem);
+                    // 새로운 행을 맨 앞에 추가
+                    aItems.unshift(oItem);
 
-                oDataModel.setProperty("/Items", aItems);
+                    oDataModel.setProperty("/Items", aItems);
 
-                // 바인딩 업데이트
-                oDataModel.updateBindings();
-                
-            }.bind(this)
-        ).fail(function () {
-            MessageBox.information("플랜트 데이터를 불러오는데 실패했습니다.");
-        });
-    },
+                    // 바인딩 업데이트
+                    oDataModel.updateBindings();
+                    
+                }.bind(this)
+            ).fail(function () {
+                MessageBox.information("플랜트 데이터를 불러오는데 실패했습니다.");
+            });
+        },
 
-    // 데이터 삭제 버튼
-    onDelete: function () {
-        var oTable = this.byId("dataTable");
-        var aSelectedItems = oTable.getSelectedItems(); // 선택된 항목을 가져오기
-        var oDataModel = this.getModel("dataModel");
-        var aData = oDataModel.getProperty("/Items");
+        // 데이터 삭제 버튼
+        onDelete: function () {
+            var oTable = this.byId("dataTable");
+            var aSelectedItems = oTable.getSelectedItems(); // 선택된 항목을 가져오기
+            var oDataModel = this.getModel("dataModel");
+            var aData = oDataModel.getProperty("/Items");
 
-        if (aSelectedItems.length === 0) {
-            MessageBox.information("선택한 항목이 없습니다.");
-            return;
-        }
+            if (aSelectedItems.length === 0) {
+                MessageBox.information("선택한 항목이 없습니다.");
+                return;
+            }
 
-        // 삭제할 항목 배열 생성
-        if (!this.aItemsToDelete) {
-            this.aItemsToDelete = [];
-        }
+            // 삭제할 항목 배열 생성
+            if (!this.aItemsToDelete) {
+                this.aItemsToDelete = [];
+            }
 
-        // 선택된 항목의 데이터를 aItemsToDelete 배열에 추가
-        aSelectedItems.forEach(function (oItem) {
-            var oContext = oItem.getBindingContext("dataModel");
-            var oRowData = oContext.getObject();
-            this.aItemsToDelete.push(oRowData);
-            console.log(oRowData);
-        }.bind(this));
+            // 선택된 항목의 데이터를 aItemsToDelete 배열에 추가
+            aSelectedItems.forEach(function (oItem) {
+                var oContext = oItem.getBindingContext("dataModel");
+                var oRowData = oContext.getObject();
+                this.aItemsToDelete.push(oRowData);
+                console.log(oRowData);
+            }.bind(this));
 
-        // 선택된 항목을 모델 데이터에서 제거
-        var aIndexesToDelete = aSelectedItems.map(function (oItem) {
-            var oContext = oItem.getBindingContext("dataModel");
-            var sPath = oContext.getPath();
-            return parseInt(sPath.split('/').pop(), 10); // 인덱스를 숫자로 변환
-        });
+            // 선택된 항목을 모델 데이터에서 제거
+            var aIndexesToDelete = aSelectedItems.map(function (oItem) {
+                var oContext = oItem.getBindingContext("dataModel");
+                var sPath = oContext.getPath();
+                return parseInt(sPath.split('/').pop(), 10); // 인덱스를 숫자로 변환
+            });
 
-        // 인덱스를 역순으로 정렬하여 제거
-        aIndexesToDelete.sort(function (a, b) {
-            return b - a;
-        }).forEach(function (index) {
-            aData.splice(index, 1); // 1개의 항목을 제거
-        });
+            // 인덱스를 역순으로 정렬하여 제거
+            aIndexesToDelete.sort(function (a, b) {
+                return b - a;
+            }).forEach(function (index) {
+                aData.splice(index, 1); // 1개의 항목을 제거
+            });
 
-        // 모델의 데이터 업데이트
-        oDataModel.setProperty("/Items", aData);
+            // 모델의 데이터 업데이트
+            oDataModel.setProperty("/Items", aData);
 
-        // 모델 새로고침
-        oDataModel.refresh();
-        
-        // 선택 해제
-        oTable.removeSelections(true);
-    },   
-        
+            // 모델 새로고침
+            oDataModel.refresh();
+            
+            // 선택 해제
+            oTable.removeSelections(true);
+        },   
+            
         // 엑셀 다운로드
         onDownload: function () {
-            var aCols, oRowBinding, oSettings, oSheet, oTable;
-            var aData = [0]; // 데이터가 없는 경우 템플릿으로 사용할 빈 데이터 배열
-        
-            // 테이블 객체가 이미 존재하지 않으면 가져옴
-            if (!this._oTable) {
-                this._oTable = this.byId('dataTable');
-            }
-        
-            // 테이블과 바인딩을 가져옴
-            oTable = this._oTable;
-            oRowBinding = oTable.getBinding('items');
-        
-            // 컬럼 설정을 생성
-            aCols = this.createColumnConfig();
-        
-            // 데이터가 있는지 확인
-            if (oRowBinding.getLength() > 0) {
-                // 데이터가 있는 경우, 데이터 바인딩을 가져옴
-                oSettings = {
-                    workbook: {
-                        columns: aCols,
-                        hierarchyLevel: 'Level' // 계층 구조 레벨 설정
-                    },
-                    dataSource: oRowBinding, // 데이터 소스 설정
-                    fileName: '다인정공_공정 기준 정보.xlsx', // 다운로드 파일 이름 설정
-                    worker: false // 워커 사용 여부 (테이블 안 보이게)
-                };
-            } else {
-                // 데이터가 없는 경우, 빈 데이터 배열을 사용하여 템플릿 다운로드
-                oSettings = {
-                    workbook: {
-                        columns: aCols,
-                        hierarchyLevel: 'Level' // 계층 구조 레벨 설정
-                    },
-                    dataSource: aData, // 빈 데이터 배열
-                    fileName: '다인정공_공정 기준 정보_템플릿.xlsx', // 다운로드 파일 이름 설정
-                    worker: false // 워커 사용 여부 (테이블 안 보이게)
-                };
-            }
-        
-            // 엑셀 파일을 생성하고 다운로드
-            oSheet = new Spreadsheet(oSettings);
-            oSheet.build().finally(function() {
-                oSheet.destroy();
+            var oMainModel = this.getOwnerComponent().getModel();
+            var oOpiModel = this.getView().getModel("opiModel"); // opiModel 가져오기
+            var oWcModel = this.getView().getModel("wcModel"); // wcModel 가져오기
+            var oSettings, oSheet;
+
+            // 데이터베이스에서 데이터를 가져오기
+            this._getODataRead(oMainModel, "/Operationcd").done(function(aData) {
+                // opiModel 및 wcModel의 데이터를 가져오기
+                var aOpiData = oOpiModel.getProperty("/");
+                var aWcData = oWcModel.getProperty("/");
+
+                // aData의 Operationid와 opiModel의 OperationStandardTextCode를 비교하여 OperationidText 설정
+                aData.forEach(function(oItem) {
+                    var oMatchedOpiItem = aOpiData.find(function(opiItem) {
+                        return opiItem.OperationStandardTextCode === oItem.Operationid;
+                    });
+                    if (oMatchedOpiItem) {
+                        oItem.OperationidText = oMatchedOpiItem.OperationStandardTextCodeName;
+                    }
+
+                    // aData의 Workcenter와 wcModel의 WorkCenter를 비교하여 WorkcenterText 설정
+                    var oMatchedWcItem = aWcData.find(function(wcItem) {
+                        return wcItem.WorkCenter === oItem.Workcenter;
+                    });
+                    if (oMatchedWcItem) {
+                        oItem.WorkcenterText = oMatchedWcItem.WorkCenterText;
+                    }
+                });
+
+                // 공정코드(Operationid) 및 작업장명(WorkcenterText)으로 정렬
+                aData.sort(function(a, b) {
+                    var codeA = a.Operationid || "";
+                    var codeB = b.Operationid || "";
+                    if (codeA === codeB) {
+                        var textA = a.WorkcenterText || "";
+                        var textB = b.WorkcenterText || "";
+                        return textA.localeCompare(textB);
+                    }
+                    return codeA.localeCompare(codeB);
+                });
+
+                // 엑셀 컬럼 설정을 생성
+                var aCols = this.createColumnConfig();
+                
+                if (aData.length > 0) {
+                    // 데이터가 있는 경우, 데이터 소스를 설정
+                    oSettings = {
+                        workbook: {
+                            columns: aCols,
+                            hierarchyLevel: 'Level' // 계층 구조 레벨 설정
+                        },
+                        dataSource: aData, // 데이터 소스 설정
+                        fileName: '다인정공_공정 기준 정보.xlsx', // 다운로드 파일 이름 설정
+                        worker: false // 워커 사용 여부 (테이블 안 보이게)
+                    };
+                } else {
+                    // 데이터가 없는 경우, 빈 데이터 배열을 사용하여 템플릿 다운로드
+                    oSettings = {
+                        workbook: {
+                            columns: aCols,
+                            hierarchyLevel: 'Level' // 계층 구조 레벨 설정
+                        },
+                        dataSource: [0], // 빈 데이터 배열
+                        fileName: '다인정공_공정 기준 정보_템플릿.xlsx', // 다운로드 파일 이름 설정
+                        worker: false // 워커 사용 여부 (테이블 안 보이게)
+                    };
+                }
+
+                // 엑셀 파일을 생성하고 다운로드
+                oSheet = new Spreadsheet(oSettings);
+                oSheet.build().finally(function() {
+                    oSheet.destroy();
+                });
+            }.bind(this)).fail(function(oError) {
+                MessageBox.error("데이터를 가져오는 데 실패하였습니다. 오류 : " + oError.message);
             });
         },
         
@@ -856,8 +887,7 @@ sap.ui.define([
                                 };
                             });
         
-                            console.log(filteredData);
-                            var totalRow = filteredData.length; // 전체 행 수
+                            console.log("fd",filteredData);
 
                             // 공정코드와 작업장 모델 데이터를 가져오기
                             var opiModel = this.getModel("opiModel").getData();
@@ -873,6 +903,20 @@ sap.ui.define([
                             });
                             console.log("aF",aFilteredData);
 
+                            // 유효성 검사 실패한 데이터가 있는지 확인
+                            var invalidData = filteredData.filter(function (item) {
+                                return !validOperationIds.includes(item.Operationid) || !validWorkcenters.includes(item.Workcenter);
+                            });
+
+                            if (invalidData.length > 0) {
+                                // 유효성 검사 실패한 데이터가 있는 경우 오류 메시지 표시
+                                var invalidMessages = invalidData.map(function (item) {
+                                    return "공정코드 : " + item.Operationid + ", 작업장명 : " + item.Workcenter;
+                                }).join("\n");
+                                MessageBox.error("엑셀 파일에 잘못된 공정코드 또는 작업장이 포함되어 있습니다. 데이터 업로드를 중단합니다.\n \n 잘못된 항목 \n" + invalidMessages);
+                                return;
+                            }
+
                             //기존 데이터에 있는지 확인
                             var aFilterOpi = this.getModel("dataModel").getData().Items.filter(function (item) {
                                 return item.Operationid && item.Workcenter;
@@ -880,8 +924,6 @@ sap.ui.define([
                             // 중복 확인을 위한 객체 생성
                             var duplicateData = {};
                             var saveData = [];
-                            var failedRow = 0; // 실패한 로우 수 담을 변수
-                            var successRow = 0; // 성공한 로우 수를 담을 변수
 
                             aFilteredData.forEach(function (item) {
                                 var opiwcKey = item.Operationid + "_" + item.Workcenter;
@@ -904,18 +946,14 @@ sap.ui.define([
                                     }
                                 }
                             });
-                            successRow = saveData.length; // 성공한 행 개수
-                            failedRow = totalRow - successRow;
-                            console.log("T", totalRow);
-                            console.log("s",successRow);
-                            console.log("f",failedRow);
+                           
                             // 데이터 저장 요청
                             saveData.forEach(function (oData) {
                                 this._getODataCreate(oMainModel, "/Operationcd", oData).fail(function () {
                                     MessageBox.information("엑셀 파일이 업로드 되지 않았습니다.");
                                 });
                             }.bind(this));
-                            MessageBox.information("엑셀 파일이 업로드 되었습니다." + "( 성공 : "+ successRow + "건 / 실패 : " + failedRow + "건 )" );
+                            MessageBox.information("엑셀 파일이 업로드 되었습니다.");
         
                             // 데이터 새로고침
                             this._getData();
