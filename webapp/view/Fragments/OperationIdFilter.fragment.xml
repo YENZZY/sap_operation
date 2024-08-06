@@ -1,0 +1,59 @@
+<core:FragmentDefinition
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:m="sap.m"
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:core="sap.ui.core">
+    <ValueHelpDialog
+        title="공정코드"
+        ok=".onValueHelpWithSuggestionsOkPress"
+        cancel=".onValueHelpWithSuggestionsCancelPress"
+        afterClose=".onValueHelpWithSuggestionsAfterClose"
+        supportRanges="true"
+        key="OperationStandardTextCode">
+        <filterBar>
+            <fb:FilterBar
+                advancedMode="true"
+                search=".onFilterBarWithSuggestionsSearch"
+                isRunningInValueHelpDialog="true">
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="opiGroup"
+                        name="OperationStandardTextCode"
+                        label="공정코드"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="OperationStandardTextCode"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'opiModel>/',
+                                    sorter: { path: 'OperationStandardTextCode' }
+                                }">
+                                <core:Item key="{opiModel>OperationStandardTextCode}" text="{opiModel>OperationStandardTextCode}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="opiGroup"
+                        name="OperationStandardTextCodeName"
+                        label="공정코드명"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="OperationStandardTextCodeName"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'opiModel>/',
+                                    sorter: { path: 'OperationStandardTextCodeName' }
+                                }">
+                                <core:Item key="{opiModel>OperationStandardTextCodeName}" text="{opiModel>OperationStandardTextCodeName}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

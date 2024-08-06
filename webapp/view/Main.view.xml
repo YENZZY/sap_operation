@@ -26,17 +26,92 @@
                             <fb:filterGroupItems>
                                 <fb:FilterGroupItem name="Plant" label="플랜트" groupName="Group1" visibleInFilterBar="true">
                                     <fb:control>
-                                        <MultiInput width="15rem" id="VHPlant" valueHelpRequest="onValueHelps" required="true"/>
+                                        <MultiInput
+                                            width="15rem"
+                                            id="VHPlant"
+                                            valueHelpRequest="onValueHelps"
+                                            required="true"
+                                            suggestionRows="{
+                                            path: 'plantModel>/',
+                                            length: 10}"
+                                        >
+                                            <suggestionColumns>
+                                                <Column>
+                                                    <Label text="플랜트"/>
+                                                </Column>
+                                            </suggestionColumns>
+                                            <suggestionRows>
+                                                <ColumnListItem>
+                                                    <Label text="{plantModel>Plant}" />
+                                                </ColumnListItem>
+                                            </suggestionRows>
+                                        </MultiInput>
                                     </fb:control>
                                 </fb:FilterGroupItem>
                                 <fb:FilterGroupItem name="OperationCode" label="공정코드" groupName="Group2" visibleInFilterBar="true">
                                     <fb:control>
-                                        <MultiInput width="15rem" id="VHOpCode" valueHelpRequest="onValueHelps"/>
+                                        <MultiInput 
+                                            width="15rem" 
+                                            id="VHOpCode" 
+                                            valueHelpRequest="onValueHelps"
+                                            suggestionRows="{
+                                            path: 'opiModel>/',
+                                            length: 10}"
+                                        >
+                                            <suggestionColumns>
+                                                <Column>
+                                                    <Label text="공정코드"/>
+                                                </Column>
+                                                <Column>
+                                                    <Label text="공정코드명"/>
+                                                </Column>
+                                            </suggestionColumns>
+                                            <suggestionRows>
+                                                <ColumnListItem>
+                                                    <Label text="{opiModel>OperationStandardTextCode}" />
+                                                    <Label text="{opiModel>OperationStandardTextCodeName}" />
+                                                </ColumnListItem>
+                                            </suggestionRows>
+                                        </MultiInput>
                                     </fb:control>
                                 </fb:FilterGroupItem>
                                 <fb:FilterGroupItem name="WorkCenter" label="작업장" groupName="Group3" visibleInFilterBar="true">
                                     <fb:control>
-                                        <MultiInput width="15rem" id="VHWC" valueHelpRequest="onValueHelps"/>
+                                        <MultiInput 
+                                            width="15rem"
+                                            id="VHWC"
+                                            valueHelpRequest="onValueHelps"
+                                            suggestionRows="{
+                                            path: 'wcModel>/',
+                                            length: 10}"
+                                        >
+                                            <suggestionColumns>
+                                                <Column>
+                                                    <Label text="범주"/>
+                                                </Column>
+                                                <Column>
+                                                    <Label text="플랜트"/>
+                                                </Column>
+                                                <Column>
+                                                    <Label text="작업장"/>
+                                                </Column>
+                                                <Column>
+                                                    <Label text="작업장명"/>
+                                                </Column>
+                                                <Column>
+                                                    <Label text="언어"/>
+                                                </Column>
+                                            </suggestionColumns>
+                                            <suggestionRows>
+                                                <ColumnListItem>
+                                                    <Label text="{wcModel>WorkCenterCategoryCode}" />
+                                                    <Label text="{wcModel>Plant}" />
+                                                    <Label text="{wcModel>WorkCenter}" />
+                                                    <Label text="{wcModel>WorkCenterText}" />
+                                                    <Label text="{wcModel>Language}" />
+                                                </ColumnListItem>
+                                            </suggestionRows>
+                                        </MultiInput>
                                     </fb:control>
                                 </fb:FilterGroupItem>
                             </fb:filterGroupItems>
