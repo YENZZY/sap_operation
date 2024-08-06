@@ -25,10 +25,8 @@ sap.ui.define([
     return Controller.extend("operation.controller.Main", {
         onInit: function () {
             this.getRouter().getRoute("Main").attachMatched(this._onRouteMatched, this);
-            this._setModel(); 
 
             this.oSmartVariantManagement = this.byId("standardSVM");
-            this.oSmartVariantManagement1 = this.byId("tableSVM");
            
             this.oFilterBar = this.byId("filterbar");
             
@@ -109,17 +107,6 @@ sap.ui.define([
             })
         },  
 
-        // 메인 화면 visible editable 변경 모델
-        _setModel: function () {
-            var oChangeModel = new JSONModel({
-                editable: false,
-                visibleEdit: false, // 수정 버튼 눌렀을 때 보이는 버튼: 추가, 삭제
-                visibleGet: true,   // 조회 화면에서 보이는 버튼: 업로드, 다운로드
-                // buttonText: "수정"
-            });
-            this.getView().setModel(oChangeModel, "changeModel");
-        },
-
         //svm : standard
         fetchData: function () {
             var aData = this.oFilterBar.getAllFilterItems().reduce(function (aResult, oFilterItem) {
@@ -167,16 +154,6 @@ sap.ui.define([
                 contentWidth: "32rem",
                 source: oEvt.getSource()
             });
-        },
-
-        // 버튼 및 텍스트 변경 (수정/ 저장)
-        toggleEditMode: function(EditMode) {
-            var oChangeModel = this.getView().getModel("changeModel");
-        
-            oChangeModel.setProperty("/editable", EditMode); //테이블 valuehelp 수정가능
-            oChangeModel.setProperty("/visibleGet", !EditMode); //조회 버튼 비활성화
-            // oChangeModel.setProperty("/buttonText", EditMode ? "저장" : "수정");
-            oChangeModel.setProperty("/visibleEdit", EditMode); //수정 버튼 활성화
         },
 
         // 필터 검색
@@ -262,10 +239,6 @@ sap.ui.define([
         },        
 
         onSave: function () {
-            // 버튼 저장 -> 수정
-            var oChangeModel = this.getModel("changeModel");
-            var Editable = oChangeModel.getProperty("/editable");
-
             var oMainModel = this.getOwnerComponent().getModel();
             var oDataModel = this.getModel("dataModel"); // 테이블 데이터
             var aData = oDataModel.getData().Items;
@@ -327,7 +300,6 @@ sap.ui.define([
                         });
                     }.bind(this));
                     MessageBox.information("데이터 저장에 성공하였습니다.");
-                    this.toggleEditMode(!Editable);
                     // 데이터 새로고침
                     this._getData();
                 }.bind(this)).fail(function (oError) {
@@ -338,13 +310,25 @@ sap.ui.define([
 
         // 푸터 - 취소 버튼
         onCancel: function () {
-            this.toggleEditMode(false);
             this._getData();
+               // 입력 필드의 유효성 상태와 오류 메시지 초기화
+            this.resetInput();
         },
-
-        //  수정 버튼
-        onEdit: function () {
-            this.toggleEditMode(true);
+        
+        resetInput: function () {
+            // 현재 컨트롤러가 관리하는 뷰를 가져옴
+            var oView = this.getView();
+        
+            // 뷰에서 모든 Input 필드를 찾음
+            var inputs = oView.findAggregatedObjects(true, function (oControl) { // findAggregatedObjects 메소드를 사용하여 현재 뷰 내에 있는 모든 sap.m.Input 컨트롤을 찾기. 뷰와 그 하위 컨트롤들을 재귀적으로 검색하여 조건에 맞는 컨트롤들을 반환
+                return oControl.isA("sap.m.Input"); // oControl.isA("sap.m.Input")는 각 컨트롤이 sap.m.Input 인스턴스인지 확인하는 조건
+            });
+        
+            // 각 Input 필드의 유효성 상태를 리셋
+            inputs.forEach(function (oInput) {
+                oInput.setValueState(ValueState.None);
+                oInput.setValueStateText("");
+            });
         },
 
         // 공정 코드 value help

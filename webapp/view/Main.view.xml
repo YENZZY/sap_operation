@@ -52,11 +52,10 @@
                                 <Title text="작업 지시" level="H2"/>
                                 <vm:VariantManagement id="tableSVM" for="dataTable"/>
                                 <ToolbarSpacer/>
-                                <Button id="add" text="+" press="onAdd" visible="{changeModel>/visibleEdit}"/>
-                                <Button id="delete" text="삭제" press="onDelete" visible="{changeModel>/visibleEdit}"/>
-                                <u:FileUploader id="upload" sameFilenameAllowed="true" iconOnly="false" buttonOnly="true" buttonText="업로드" fileType="XLSX,xlsx"
-								change="onUpload" visible="{changeModel>/visibleGet}"/>
-                                <Button id="download" text="다운로드" press="onDownload" visible="{changeModel>/visibleGet}"/>
+                                <Button id="add" text="+" press="onAdd"/>
+                                <Button id="delete" text="삭제" press="onDelete"/>
+                                <u:FileUploader id="upload" sameFilenameAllowed="true" iconOnly="false" buttonOnly="true" buttonText="업로드" fileType="XLSX,xlsx" change="onUpload"/>
+                                <Button id="download" text="다운로드" press="onDownload"/>
                                 <Button icon="sap-icon://action-settings" press="openPersoDialog" tooltip="Settings"/>
                             </content>
                         </OverflowToolbar>
@@ -88,7 +87,6 @@
                                     showValueHelp="true"
                                     valueHelpRequest="opiValueHelp"
                                     value="{dataModel>Operationid}"
-                                    editable="{changeModel>/editable}"
                                     suggestionItemSelected="onOpiSelected"
                                     showSuggestion="true"
                                     suggestionItems="{
@@ -104,14 +102,12 @@
                                 </Input>
 
                                 <Text text="{dataModel>OperationidText}" wrapping="false"/> 
-                                <!-- suggest="wchandleSuggest" -->
                                 <Input
                                     id="workcenter"
                                     type="Text"
                                     showValueHelp="true"
                                     valueHelpRequest="wcValueHelp"
                                     value="{dataModel>Workcenter}"
-                                    editable="{changeModel>/editable}"
                                     suggestionItemSelected="onWcSelected"
                                     showSuggestion="true"
                                     suggestionItems="{
@@ -135,8 +131,7 @@
             <f:footer>
                 <OverflowToolbar>
                     <ToolbarSpacer/>
-                    <Button id="btnEdit" type="Emphasized" text="수정" press="onEdit" visible="{changeModel>/visibleGet}"/>
-                    <Button id="btnSave" type="Emphasized" text="저장" press="onSave" visible="{changeModel>/visibleEdit}"/>
+                    <Button id="btnSave" type="Emphasized" text="저장" press="onSave"/>
                     <Button type="Ghost" text="취소" press="onCancel"/>
                 </OverflowToolbar>
             </f:footer>
