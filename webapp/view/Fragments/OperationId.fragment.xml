@@ -1,6 +1,8 @@
 <core:FragmentDefinition
 	xmlns="sap.m"
 	xmlns:core="sap.ui.core"
+	width="50%"
+	height="50%"
 >
 	<TableSelectDialog
 		noDataText="공정 코드 데이터가 없습니다."
@@ -15,8 +17,11 @@
 			sorter : {
 				path : 'OperationStandardTextCode',
 				descending : false
-			} 
-		}">
+			}
+		}"
+		contentHeight="50%"
+		contentWidth="50%"
+	>
 		<ColumnListItem selected="{selectedItem}">
 			<cells>
 				<Text text="{opiModel>OperationStandardTextCode}" />

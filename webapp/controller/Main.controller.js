@@ -1000,18 +1000,7 @@ sap.ui.define([
 				and: true
 			}));
 		},
-		_filterTableWithSuggestions: function (oFilter) {
-			var oVHD = this._oVHDWithSuggestions;
-			oVHD.getTableAsync().then(function (oTable) {
-				if (oTable.bindRows) {
-					oTable.getBinding("rows").filter(oFilter);
-				}
-				if (oTable.bindItems) {
-					oTable.getBinding("items").filter(oFilter);
-				}
-				oVHD.update();
-			});
-		},
+		
 		onOpiClose: function () {
 			this._oVHDWithSuggestions.destroy();
 		},
@@ -1056,7 +1045,7 @@ sap.ui.define([
             oMultiInput.setValue("");
         },
         // 공정코드 value help 끝
-        
+
         // 작업장 필터 valuehelp
         onWcValueHelps: function () {
             // 초기화된 MultiInput 객체
@@ -1223,18 +1212,7 @@ sap.ui.define([
 				and: true
 			}));
 		},
-		_filterTableWithSuggestions: function (oFilter) {
-			var oVHD = this._oVHDWithSuggestions;
-			oVHD.getTableAsync().then(function (oTable) {
-				if (oTable.bindRows) {
-					oTable.getBinding("rows").filter(oFilter);
-				}
-				if (oTable.bindItems) {
-					oTable.getBinding("items").filter(oFilter);
-				}
-				oVHD.update();
-			});
-		},
+		
 		onWcClose: function () {
 			this._oVHDWithSuggestions.destroy();
 		},

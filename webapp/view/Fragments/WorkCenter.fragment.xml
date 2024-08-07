@@ -16,7 +16,10 @@
 				path : 'WorkCenter',
 				descending : false
 			}
-		}">
+		}"
+		contentHeight="50%"
+		contentWidth="50%"
+	>
 		<ColumnListItem selected="{selectedItem}">
 			<cells>
 				<Text text="{wcModel>WorkCenterCategoryCode}" />
