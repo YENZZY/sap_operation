@@ -29,8 +29,9 @@
                                         <MultiInput
                                             width="15rem"
                                             id="VHPlant"
-                                            valueHelpRequest="onValueHelps"
+                                            valueHelpRequest="onPlantValueHelp"
                                             required="true"
+                                            suggestionItemSelected="onPlantSelected"
                                             suggestionRows="{
                                             path: 'plantModel>/',
                                             length: 10}"
@@ -54,6 +55,7 @@
                                             width="15rem" 
                                             id="VHOpCode" 
                                             valueHelpRequest="onValueHelps"
+                                            suggestionItemSelected="onSuggestionItemSelected"
                                             suggestionRows="{
                                             path: 'opiModel>/',
                                             length: 10}"
@@ -80,7 +82,8 @@
                                         <MultiInput 
                                             width="15rem"
                                             id="VHWC"
-                                            valueHelpRequest="onValueHelps"
+                                            valueHelpRequest="onWcValueHelps"
+                                            suggestionItemSelected="onWcSelected"
                                             suggestionRows="{
                                             path: 'wcModel>/',
                                             length: 10}"

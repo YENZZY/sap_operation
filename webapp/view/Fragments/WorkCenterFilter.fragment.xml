@@ -1,0 +1,113 @@
+<core:FragmentDefinition
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:m="sap.m"
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:core="sap.ui.core">
+    <ValueHelpDialog
+        title="작업장"
+        ok="onWcOk"
+        cancel="onWcCancel"
+        afterClose="onWcClose"
+        supportRanges="true"
+        key="WorkCenter">
+        <filterBar>
+            <fb:FilterBar
+                advancedMode="true"
+                search="onWcSearch"
+                isRunningInValueHelpDialog="true">
+                <fb:filterGroupItems>
+                <fb:FilterGroupItem
+                        groupName="wcGroup"
+                        name="WorkCenterCategoryCode"
+                        label="범주"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="WorkCenterCategoryCode"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'wcModel>/',
+                                    sorter: { path: 'WorkCenterCategoryCode' }
+                                }">
+                                <core:Item key="{wcModel>WorkCenterCategoryCode}" text="{wcModel>WorkCenterCategoryCode}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="wcGroup"
+                        name="Plant"
+                        label="플랜트"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Plant"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'wcModel>/',
+                                    sorter: { path: 'Plant' }
+                                }">
+                                <core:Item key="{wcModel>Plant}" text="{wcModel>Plant}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="wcGroup"
+                        name="WorkCenter"
+                        label="작업장"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="WorkCenter"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'wcModel>/',
+                                    sorter: { path: 'WorkCenter' }
+                                }">
+                                <core:Item key="{wcModel>WorkCenter}" text="{wcModel>WorkCenter}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="wcGroup"
+                        name="WorkCenterText"
+                        label="공정코드명"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="WorkCenterText"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'wcModel>/',
+                                    sorter: { path: 'WorkCenterText' }
+                                }">
+                                <core:Item key="{wcModel>WorkCenterText}" text="{wcModel>WorkCenterText}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="wcGroup"
+                        name="Language"
+                        label="언어"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Language"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'wcModel>/',
+                                    sorter: { path: 'Language' }
+                                }">
+                                <core:Item key="{wcModel>Language}" text="{wcModel>Language}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

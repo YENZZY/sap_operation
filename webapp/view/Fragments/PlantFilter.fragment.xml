@@ -1,0 +1,42 @@
+<core:FragmentDefinition
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:m="sap.m"
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:core="sap.ui.core"
+>
+    <ValueHelpDialog
+        title="플랜트"
+        ok="onPlantOk"
+        cancel="onPlantCancel"
+        afterClose="onPlantClose"
+        supportRanges="true"
+        key="Plant">
+        <filterBar>
+            <fb:FilterBar
+                advancedMode="true"
+                search="onPlantSearch"
+                isRunningInValueHelpDialog="true">
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="plantGroup"
+                        name="Plant"
+                        label="플랜트"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Plant"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'plantModel>/',
+                                    sorter: { path: 'Plant' }
+                                }">
+                                <core:Item key="{plantModel>Plant}" text="{plantModel>Plant}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>
