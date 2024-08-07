@@ -22,7 +22,7 @@
             <f:header>
                 <f:DynamicPageHeader>
                     <f:content>
-                        <fb:FilterBar id="filterbar" persistencyKey="persistencyKey" useToolbar="false" search="onSearch" filterChange="onFilterChange" afterVariantLoad="onAfterVariantLoad" class="sapUiMediumMarginBottom">
+                        <fb:FilterBar id="filterbar" persistencyKey="persistencyKey" useToolbar="false" search="onSearch" filterChange="onFilterChange" afterVariantLoad="onAfterVariantLoad"  class="sapUiMediumMarginBottom">
                             <fb:filterGroupItems>
                                 <fb:FilterGroupItem name="Plant" label="플랜트" groupName="Group1" visibleInFilterBar="true">
                                     <fb:control>
@@ -35,6 +35,7 @@
                                             suggestionRows="{
                                             path: 'plantModel>/',
                                             length: 10}"
+                                            liveChange="onTokenUpdate"
                                         >
                                             <suggestionColumns>
                                                 <Column>
@@ -43,7 +44,7 @@
                                             </suggestionColumns>
                                             <suggestionRows>
                                                 <ColumnListItem>
-                                                    <Label text="{plantModel>Plant}" />
+                                                    <Label text="{plantModel>Plant}"/>
                                                 </ColumnListItem>
                                             </suggestionRows>
                                         </MultiInput>
@@ -54,11 +55,12 @@
                                         <MultiInput 
                                             width="15rem" 
                                             id="VHOpCode" 
-                                            valueHelpRequest="onValueHelps"
-                                            suggestionItemSelected="onSuggestionItemSelected"
+                                            valueHelpRequest="onOpiValueHelp"
+                                            suggestionItemSelected="onOpiSelected"
                                             suggestionRows="{
                                             path: 'opiModel>/',
                                             length: 10}"
+                                            liveChange="onTokenChange"
                                         >
                                             <suggestionColumns>
                                                 <Column>
@@ -87,6 +89,7 @@
                                             suggestionRows="{
                                             path: 'wcModel>/',
                                             length: 10}"
+                                            liveChange="onTokenChange"
                                         >
                                             <suggestionColumns>
                                                 <Column>
@@ -157,7 +160,7 @@
                         </Column>
                     </columns>
                     <items>
-                        <ColumnListItem vAlign="Middle" type="Navigation">
+                        <ColumnListItem vAlign="Middle" type="Inactive"> <!-- 테이블 네비게이션바 비활성화 -->
                             <cells>
                                 <Text text="{dataModel>Plant}" wrapping="false"/>
                                 <Input
