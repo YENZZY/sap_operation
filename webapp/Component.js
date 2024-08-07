@@ -32,12 +32,12 @@ sap.ui.define([
 
                 //excel
                 var jQueryScript = document.createElement('script');
-                jQueryScript.setAttribute('src', 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.10.0/jszip.js');
+                jQueryScript.setAttribute('src', '/js/jszip.js');
                 document.head.appendChild(jQueryScript);
             
                 //excel
                 var jQueryScript = document.createElement('script');
-                jQueryScript.setAttribute('src', 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.10.0/xlsx.js');
+                jQueryScript.setAttribute('src', '/js/xlsx.js');
                 document.head.appendChild(jQueryScript);
             }
         });

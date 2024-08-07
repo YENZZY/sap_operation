@@ -20,7 +20,9 @@ sap.ui.define([
     'sap/ui/core/Fragment',
     'sap/ui/core/library',
     'sap/ui/comp/smartvariants/PersonalizableInfo',
-    'sap/m/p13n/Engine'
+    'sap/m/p13n/Engine',
+    'operation/js/xlsx',
+    'operation/js/jszip'
 ], function (Controller, JSONModel, MessageBox, ValueHelpDialog, coreLibrary, SearchField, MultiInput, TypeString, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet, Fragment, ValueState, PersonalizableInfo, Engine, SelectionController, SortController, GroupController, FilterController, MetadataHelper, Sorter, ColumnWidthController) {
     "use strict";
 
@@ -456,7 +458,7 @@ sap.ui.define([
                 oInput.setValueState(ValueState.None);
             } else {
                 oInput.setValueState(ValueState.Error);
-                oInput.setValueStateText("유효하지 않은 공정 코드명입니다.");
+                oInput.setValueStateText("유효하지 않은 공정 코드입니다.");
             }
         },
         // suggestion에서 공정코드 선택했을 시 공정코드명 자동 변환
@@ -539,23 +541,20 @@ sap.ui.define([
 
         wcValueHelp: function (oEvent) {
             var sInputId = oEvent.getSource().getId();
-            console.log("sid",sInputId);
             var oView = this.getView();
             var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
             this.inputRow = rowId;
         
             if (sInputId.includes("workcenter")) {
-                this._pWorkCenterValueHelpDialog = Fragment.load({
-                id: oView.getId()+this.inputRow,
+                Fragment.load({
+                id: oView.getId() + this.inputRow,
                 name: "operation.view.Fragments.WorkCenter",
                 controller: this
                 }).then(function(oValueHelpDialog){
                 oView.addDependent(oValueHelpDialog);
-                return oValueHelpDialog;
-                });
-                this._pWorkCenterValueHelpDialog.then(function(oValueHelpDialog){
-    
-                    oValueHelpDialog.open();
+                oValueHelpDialog.open();
+                }).catch(function (oError) {
+                    console.error("작업장 Value Help를 여는데 실패하였습니다.", oError);
                 });
             }
         },
@@ -581,7 +580,7 @@ sap.ui.define([
             }
 
             if (oMatch) {
-                var sText = oMatch.WorkCenter;
+                var sText = oMatch.WorkCenterText;
                 var oDataModel = this.getModel("dataModel");
                 var items = oDataModel.getData().Items;
                 items[this.inputRow].Workcenter = sWorkcenter;
