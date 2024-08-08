@@ -37,7 +37,13 @@ sap.ui.define([
             this.oSmartVariantManagement = this.byId("standardSVM");
            
             this.oFilterBar = this.byId("filterbar");
-            
+
+            // 기본값 설정
+                this.setDefaultValues();
+
+            // 이벤트 핸들러 연결
+            this.oSmartVariantManagement.attachAfterSave(this.onAfterVariantSave, this);
+           
             var oPersInfo = new PersonalizableInfo({
                 type: "filterbar",
                 keyName: "persistencyKey",
@@ -91,6 +97,27 @@ sap.ui.define([
             //this._registerForP13n(); // 테이블을 개인화 엔진에 등록하는 것
         },
 
+        setDefaultValues: function () {
+            this._getDefaultTokens().then(function (aDefaultTokens) {
+                var oMultiInput = this.byId("VHPlant");
+                oMultiInput.setTokens(aDefaultTokens);
+            }.bind(this));
+        },
+
+        onAfterVariantSave: function (oEvent) {
+            // 저장된 변형이 로드될 때 실행될 추가 로직
+            this.setDefaultValues();
+        },
+
+        onAfterVariantLoad: function (oEvent) {
+            var oMultiInput = this.byId("VHPlant");
+
+            // 저장된 변형에서 플랜트 필터 토큰 값을 가져와서 설정
+            var aTokens = oMultiInput.getTokens();
+            if (aTokens.length === 0) {
+                this.setDefaultValues();
+            }
+        },
         _onRouteMatched: function () {
             this._getData();
         },
@@ -142,7 +169,7 @@ sap.ui.define([
                     });
                     // 데이터 읽기 성공 시 JSON 모델로 설정
                     this.setModel(new JSONModel({ Items: aGetData }), "dataModel");
-                    // this.MultiInputs("VHWC"); // 필터_작업장
+                    this.MultiInputs("VHWC"); // 필터_작업장
                     this.MultiInputs("VHOpCode"); // 필터_공정코드
                     this.MultiInputs("VHPlant", true); //필터_플랜트
             
@@ -275,7 +302,7 @@ sap.ui.define([
                     and: false // OR 조건
                 }));
             } else {
-                MessageBox.error("플랜트 값 선택은 필수입니다.");
+                MessageBox.error("플랜트 값은 필수 선택입니다.");
                 this.MultiInputs("VHPlant", true); //필터_플랜트
                 return;
             }
@@ -376,10 +403,10 @@ sap.ui.define([
                     // 데이터 저장 요청
                     saveData.forEach(function (oData) {
                         this._getODataCreate(oMainModel, "/Operationcd", oData).fail(function () {
-                            MessageBox.information("데이터 저장에 실패하였습니다.");
+                            MessageBox.error("데이터 저장에 실패하였습니다.");
                         });
                     }.bind(this));
-                    MessageBox.information("데이터 저장에 성공하였습니다.");
+                    MessageBox.success("데이터 저장에 성공하였습니다.");
                     // 데이터 새로고침
                     this._getData();
                 }.bind(this)).fail(function (oError) {
@@ -392,7 +419,7 @@ sap.ui.define([
         onCancel: function () {
             this._getData();
                // 입력 필드의 유효성 상태와 오류 메시지 초기화
-            this.resetInput();
+             this.resetInput();
         },
         
         // 초기화 시 유효성 지우기
@@ -440,36 +467,41 @@ sap.ui.define([
             this.inputRow = rowId;
             var oModel = this.getModel("opiModel");
             var aData = oModel.getData();
+            var oDataModel = this.getModel("dataModel");
+            var items = oDataModel.getData().Items;
 
-            var oMatch = aData.find(function (item) {
-                return item.OperationStandardTextCode === sOperationId;
-            });
-        
-            if (sOperationId === "") {
-                // 값이 비어있을 때 처리
+            if (sOperationId === "") { // 빈 문자열일 경우 초기화
+                items[this.inputRow].Operationid = "";
+                items[this.inputRow].OperationidText = "";
                 oInput.setValueState(ValueState.None);
                 oInput.setValueStateText("");
-                return;
-            }
 
-            if (oMatch) {
-                var sText = oMatch.OperationStandardTextCodeName;
-                var oDataModel = this.getModel("dataModel");
-                var items = oDataModel.getData().Items;
-                items[this.inputRow].Operationid = sOperationId;
-                items[this.inputRow].OperationidText = sText;
-                
-                oDataModel.updateBindings();
-        
-                oInput.setValueState(ValueState.None);
             } else {
-                oInput.setValueState(ValueState.Error);
-                oInput.setValueStateText("유효하지 않은 공정 코드입니다.");
+
+                var oMatch = aData.find(function (item) {
+                    return item.OperationStandardTextCode === sOperationId;
+                });
+
+                if (oMatch) {
+                    var sText = oMatch.OperationStandardTextCodeName;
+                    items[this.inputRow].Operationid = sOperationId;
+                    items[this.inputRow].OperationidText = sText;
+                    oInput.setValueState(ValueState.None);
+                    oInput.setValueStateText("");
+
+                } else {
+                    items[this.inputRow].OperationidText = "";
+                    oInput.setValueState(ValueState.Error);
+                    oInput.setValueStateText("유효하지 않은 공정 코드입니다.");
+                }
             }
+            oDataModel.updateBindings();
         },
+
         // suggestion에서 공정코드 선택했을 시 공정코드명 자동 변환
-        onOpiSelected: function (oEvent) {
+        opitableSelected: function (oEvent) {
             var oInput = oEvent.getSource();
+            console.log("o1",oInput);
             var oSelectedItem = oEvent.getParameter("selectedItem");
             var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
             this.inputRow = rowId;
@@ -482,6 +514,7 @@ sap.ui.define([
                 var oMatch = aData.find(function (item) {
                     return item.OperationStandardTextCode === sOperationId;
                 });
+               
                 if (oMatch) {
                     var sText = oMatch.OperationStandardTextCodeName;
                     var oDataModel = this.getModel("dataModel");
@@ -501,24 +534,6 @@ sap.ui.define([
                 // 선택된 항목이 없는 경우 입력 필드를 초기화
                 oInput.setValueState(ValueState.None);
                 oInput.setValueStateText("");
-            }
-        },
-
-        handleValidation: function (oEvent) {
-            var oInput = oEvent.getSource();
-            var sValue = oInput.getValue(); // Input 입력 값
-            var oModel = this.getModel("opiModel");
-            var aData = oModel.getData();
-
-            var bValid = aData.some(function (item) {
-                return item.OperationStandardTextCode === sValue; // 공정코드
-            });
-
-            if (bValid) {
-                oInput.setValueState(ValueState.None);
-            } else {
-                oInput.setValueState(ValueState.Error);
-                oInput.setValueStateText("유효하지 않은 공정 코드입니다.");
             }
         },
 
@@ -566,97 +581,81 @@ sap.ui.define([
             }
         },
 
-         // 작업장 Input에 입력했을 때 자동으로 작업장명 바뀜 
-         onWcLiveChange: function (oEvent) {
+        // 작업장 Input에 입력했을 때 자동으로 작업장명 바뀜
+        onWcLiveChange: function (oEvent) {
             var oInput = oEvent.getSource();
             var sWorkcenter = oInput.getValue(); 
             var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
             this.inputRow = rowId;
             var oModel = this.getModel("wcModel");
             var aData = oModel.getData();
+            var oDataModel = this.getModel("dataModel");
+            var items = oDataModel.getData().Items;
 
-            var oMatch = aData.find(function (item) {
-                return item.WorkCenter === sWorkcenter;
-            });
-        
-            if (sWorkcenter === "") {
-                // 값이 비어있을 때 처리
+            if (sWorkcenter === "") { // 빈 문자열일 경우 초기화
+                items[this.inputRow].Workcenter = "";
+                items[this.inputRow].WorkcenterText = "";
                 oInput.setValueState(ValueState.None);
                 oInput.setValueStateText("");
-                return;
-            }
-
-            if (oMatch) {
-                var sText = oMatch.WorkCenterText;
-                var oDataModel = this.getModel("dataModel");
-                var items = oDataModel.getData().Items;
-                items[this.inputRow].Workcenter = sWorkcenter;
-                items[this.inputRow].WorkcenterText = sText;
                 
-                oDataModel.updateBindings();
-        
-                oInput.setValueState(ValueState.None);
             } else {
-                oInput.setValueState(ValueState.Error);
-                oInput.setValueStateText("유효하지 않은 작업장입니다.");
-            }
-        },
-        
+                var oMatch = aData.find(function (item) {
+                    return item.WorkCenter === sWorkcenter;
+                });
 
-        // 작업장 suggestion에서 선택했을 시 작업장명 자동 변환
-        onWcSelected: function (oEvent) {
+                if (oMatch) {
+                    var sText = oMatch.WorkCenterText;
+                    items[this.inputRow].Workcenter = sWorkcenter;
+                    items[this.inputRow].WorkcenterText = sText;
+                    oInput.setValueState(ValueState.None);
+                    oInput.setValueStateText("");
+
+                } else {
+                    items[this.inputRow].WorkcenterText = ""; // 유효하지 않은 경우 텍스트 초기화
+                    oInput.setValueState(ValueState.Error);
+                    oInput.setValueStateText("유효하지 않은 작업장입니다.");
+                }
+            }
+            oDataModel.updateBindings(); // 데이터 모델 업데이트
+        },
+                
+        // 작업장 Input에서 suggestion 선택했을 시 작업장명 자동 변환
+        wctableSelected: function (oEvent) {
             var oInput = oEvent.getSource();
             var oSelectedItem = oEvent.getParameter("selectedItem");
             var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
             this.inputRow = rowId;
             var oModel = this.getModel("wcModel");
             var aData = oModel.getData();
+            var oDataModel = this.getModel("dataModel");
+            var items = oDataModel.getData().Items;
 
             if (oSelectedItem) {
                 var sWorkcenter = oSelectedItem.getKey(); // 작업장
-
                 var oMatch = aData.find(function (item) {
                     return item.WorkCenter === sWorkcenter;
                 });
+
                 if (oMatch) {
                     var sText = oMatch.WorkCenterText;
-                    var oDataModel = this.getModel("dataModel");
-                    var items = oDataModel.getData().Items;
                     items[this.inputRow].Workcenter = sWorkcenter;
                     items[this.inputRow].WorkcenterText = sText;
-                    
-                    oDataModel.updateBindings();
-            
                     oInput.setValueState(ValueState.None);
                     oInput.setValueStateText("");
                 } else {
+                    items[this.inputRow].WorkcenterText = ""; // 유효하지 않은 경우 텍스트 초기화
                     oInput.setValueState(ValueState.Error);
                     oInput.setValueStateText("유효하지 않은 작업장입니다.");
                 }
             } else {
                 // 선택된 항목이 없는 경우 입력 필드를 초기화
+                items[this.inputRow].Workcenter = "";
+                items[this.inputRow].WorkcenterText = "";
                 oInput.setValueState(ValueState.None);
                 oInput.setValueStateText("");
             }
-        },
-
-        // suggestion validation
-        wchandleValidation: function (oEvent) {
-            var oInput = oEvent.getSource();
-            var sValue = oInput.getValue(); // Input 입력 값
-            var oModel = this.getModel("wcModel");
-            var aData = oModel.getData();
-
-            var bValid = aData.some(function (item) {
-                return item.WorkCenter === sValue; // 작업장
-            });
-
-            if (bValid) {
-                oInput.setValueState(ValueState.None);
-            } else {
-                oInput.setValueState(ValueState.Error);
-                oInput.setValueStateText("유효하지 않은 작업장입니다.");
-            }
+            
+            oDataModel.updateBindings();
         },
 
         wcVhSearch : function (oEvent) {
@@ -1027,6 +1026,7 @@ sap.ui.define([
                         key: sKey,
                         text: sKey
                     }));
+                    
                 } else {
 
                     // 중복된 토큰이 있는 경우, 사용자에게 메시지 표시 (선택 사항)
@@ -1239,6 +1239,7 @@ sap.ui.define([
                         key: sKey,
                         text: sKey
                     }));
+
                 } else {
                     // 중복된 토큰이 있는 경우, 사용자에게 메시지 표시 (선택 사항)
                     MessageToast.show("이미 추가된 토큰입니다.");
@@ -1248,6 +1249,7 @@ sap.ui.define([
                 oMultiInput.setValue("");
             }
         },
+
         onWcFocusOut: function (oEvent) {
             var oMultiInput = this.byId("VHWC");
             
@@ -1351,7 +1353,7 @@ sap.ui.define([
                     
                 }.bind(this)
             ).fail(function () {
-                MessageBox.information("플랜트 데이터를 불러오는데 실패했습니다.");
+                MessageBox.error("플랜트 데이터를 불러오는데 실패했습니다.");
             });
         },
 
@@ -1363,7 +1365,7 @@ sap.ui.define([
             var aData = oDataModel.getProperty("/Items");
 
             if (aSelectedItems.length === 0) {
-                MessageBox.information("선택한 항목이 없습니다.");
+                MessageBox.error("선택한 항목이 없습니다.");
                 return;
             }
 
@@ -1605,10 +1607,10 @@ sap.ui.define([
                             // 데이터 저장 요청
                             saveData.forEach(function (oData) {
                                 this._getODataCreate(oMainModel, "/Operationcd", oData).fail(function () {
-                                    MessageBox.information("엑셀 파일이 업로드 되지 않았습니다.");
+                                    MessageBox.error("엑셀 파일이 업로드 되지 않았습니다.");
                                 });
                             }.bind(this));
-                            MessageBox.information("엑셀 파일이 업로드 되었습니다.");
+                            MessageBox.success("엑셀 파일이 업로드 되었습니다.");
         
                             // 데이터 새로고침
                             this._getData();

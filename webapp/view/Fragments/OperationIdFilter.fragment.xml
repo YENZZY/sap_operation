@@ -15,7 +15,8 @@
             <fb:FilterBar
                 advancedMode="true"
                 search="onOpiSearch"
-                isRunningInValueHelpDialog="true">
+                isRunningInValueHelpDialog="true"
+            >
                 <fb:filterGroupItems>
                     <fb:FilterGroupItem
                         groupName="opiGroup"

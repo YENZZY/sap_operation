@@ -2,7 +2,8 @@
     xmlns="sap.ui.comp.valuehelpdialog"
     xmlns:m="sap.m"
     xmlns:fb="sap.ui.comp.filterbar"
-    xmlns:core="sap.ui.core">
+    xmlns:core="sap.ui.core"
+>
     <ValueHelpDialog
         title="작업장"
         ok="onWcOk"

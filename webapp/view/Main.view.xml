@@ -22,15 +22,22 @@
             <f:header>
                 <f:DynamicPageHeader>
                     <f:content>
-                        <fb:FilterBar id="filterbar" persistencyKey="persistencyKey" useToolbar="false" search="onSearch" filterChange="onFilterChange" afterVariantLoad="onAfterVariantLoad"  class="sapUiMediumMarginBottom">
+                        <fb:FilterBar
+                            id="filterbar"
+                            persistencyKey="persistencyKey"
+                            useToolbar="false"
+                            search="onSearch"
+                            filterChange="onFilterChange"
+                            afterVariantLoad="onAfterVariantLoad"
+                            class="sapUiMediumMarginBottom"
+                        > <!-- persistencyKey : 필터 바의 현재 상태(예: 필터 값)를 로컬 스토리지 또는 서버에 저장하는 키 이를 통해 사용자는 페이지를 새로고침하거나 세션이 종료된 후에도 동일한 필터 조건을 유지할 수 있음 onAfterVariantLoad: 변형이 로드된 후 실행될 추가 로직을 정의 (플랜트 필터의 토큰 값을 가져와 설정) -->
                             <fb:filterGroupItems>
-                                <fb:FilterGroupItem name="Plant" label="플랜트" groupName="Group1" visibleInFilterBar="true">
+                                <fb:FilterGroupItem name="Plant" label="플랜트" groupName="Group1" visibleInFilterBar="true" mandatory="true"> <!-- mandatory="true" 필수 필드 설정-->
                                     <fb:control>
                                         <MultiInput
                                             width="15rem"
                                             id="VHPlant"
                                             valueHelpRequest="onPlantValueHelp"
-                                            required="true"
                                             suggestionItemSelected="onPlantSelected"
                                             suggestionRows="{
                                             path: 'plantModel>/',
@@ -93,13 +100,13 @@
                                         >
                                             <suggestionColumns>
                                                 <Column>
+                                                    <Label text="작업장"/>
+                                                </Column>
+                                                <Column>
                                                     <Label text="범주"/>
                                                 </Column>
                                                 <Column>
                                                     <Label text="플랜트"/>
-                                                </Column>
-                                                <Column>
-                                                    <Label text="작업장"/>
                                                 </Column>
                                                 <Column>
                                                     <Label text="작업장명"/>
@@ -110,11 +117,11 @@
                                             </suggestionColumns>
                                             <suggestionRows>
                                                 <ColumnListItem>
-                                                    <Label text="{wcModel>WorkCenterCategoryCode}" />
-                                                    <Label text="{wcModel>Plant}" />
                                                     <Label text="{wcModel>WorkCenter}" />
-                                                    <Label text="{wcModel>WorkCenterText}" />
-                                                    <Label text="{wcModel>Language}" />
+                                                    <Label text="{wcModel>WorkCenterCategoryCode}"/>
+                                                    <Label text="{wcModel>Plant}"/>
+                                                    <Label text="{wcModel>WorkCenterText}"/>
+                                                    <Label text="{wcModel>Language}"/>
                                                 </ColumnListItem>
                                             </suggestionRows>
                                         </MultiInput>
@@ -169,16 +176,15 @@
                                     showValueHelp="true"
                                     valueHelpRequest="opiValueHelp"
                                     value="{dataModel>Operationid}"
-                                    suggestionItemSelected="onOpiSelected"
+                                    suggestionItemSelected="opitableSelected"
                                     showSuggestion="true"
                                     suggestionItems="{
                                         path: 'opiModel>/',
                                         templateShareable: false
                                     }"
-                                    change="handleValidation"
                                     liveChange="onOpiLiveChange"
                                 >
-                                 <suggestionItems>
+                                    <suggestionItems>
                                         <SuggestionItem text="{opiModel>OperationStandardTextCode}" key="{opiModel>OperationStandardTextCode}" />
                                     </suggestionItems>
                                 </Input>
@@ -190,13 +196,12 @@
                                     showValueHelp="true"
                                     valueHelpRequest="wcValueHelp"
                                     value="{dataModel>Workcenter}"
-                                    suggestionItemSelected="onWcSelected"
+                                    suggestionItemSelected="wctableSelected"
                                     showSuggestion="true"
                                     suggestionItems="{
                                         path: 'wcModel>/',
                                         templateShareable: false
                                     }"
-                                    change="wchandleValidation"
                                     liveChange="onWcLiveChange"
                                 >
                                     <suggestionItems>
