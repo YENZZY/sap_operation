@@ -10,7 +10,8 @@
         cancel="onOpiCancel"
         afterClose="onOpiClose"
         supportRanges="true"
-        key="OperationStandardTextCode">
+        key="OperationStandardTextCode"
+        >
         <filterBar>
             <fb:FilterBar
                 advancedMode="true"

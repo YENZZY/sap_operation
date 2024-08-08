@@ -18,9 +18,9 @@
 			}
 		}"
 		contentHeight="50%"
-		contentWidth="50%"
+		contentWidth="40%"
 	>
-		<ColumnListItem selected="{selectedItem}">
+		<ColumnListItem selected="{selectedItem}" vAlign="Middle">
 			<cells>
 				<Text text="{wcModel>WorkCenterCategoryCode}" />
 				<Text text="{wcModel>Plant}" />
@@ -30,27 +30,27 @@
 			</cells>
 		</ColumnListItem>
 		<columns>
-			<Column>
+			<Column hAlign="Center">
 				<header>
 					<Text text="범주" />
 				</header>
 			</Column>
-			<Column>
+			<Column hAlign="Center">
 				<header>
 					<Text text="플랜트" />
 				</header>
 			</Column>
-			<Column>
+			<Column hAlign="Center">
 				<header>
 					<Text text="작업장" />
 				</header>
 			</Column>
-			<Column>
+			<Column hAlign="Center">
 				<header>
 					<Text text="작업장명" />
 				</header>
 			</Column>
-			<Column>
+			<Column hAlign="Center">
 				<header>
 					<Text text="언어" />
 				</header>

@@ -1,0 +1,227 @@
+<mvc:View controllerName="operation.controller.Main"
+    displayBlock="true"
+    height="100%"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:u="sap.ui.unified"
+    xmlns:svm="sap.ui.comp.smartvariants"
+    xmlns:vm="sap.ui.fl.variants"
+    >
+    <!-- <Page id="page" title="{i18n>title}"> -->
+        <f:DynamicPage showFooter="true">
+            <f:title>
+                <f:DynamicPageTitle>
+                    <f:heading>
+                        <svm:SmartVariantManagement id="standardSVM" showExecuteOnSelection="true" />
+                    </f:heading>
+                </f:DynamicPageTitle>
+            </f:title>
+            <f:header>
+                <f:DynamicPageHeader>
+                    <f:content>
+                        <fb:FilterBar
+                            id="filterbar"
+                            persistencyKey="persistencyKey"
+                            useToolbar="false"
+                            search="onSearch"
+                            filterChange="onFilterChange"
+                            afterVariantLoad="onAfterVariantLoad"
+                            class="sapUiMediumMarginBottom"
+                        > <!-- persistencyKey : 필터 바의 현재 상태(예: 필터 값)를 로컬 스토리지 또는 서버에 저장하는 키 이를 통해 사용자는 페이지를 새로고침하거나 세션이 종료된 후에도 동일한 필터 조건을 유지할 수 있음 onAfterVariantLoad: 변형이 로드된 후 실행될 추가 로직을 정의 (플랜트 필터의 토큰 값을 가져와 설정) -->
+                            <fb:filterGroupItems>
+                                <fb:FilterGroupItem name="Plant" label="플랜트" groupName="Group1" visibleInFilterBar="true" mandatory="true"> <!-- mandatory="true" 필수 필드 설정-->
+                                    <fb:control>
+                                        <MultiInput
+                                            width="15rem"
+                                            id="VHPlant"
+                                            valueHelpRequest="onPlantValueHelp"
+                                            suggestionItemSelected="onPlantSelected"
+                                            suggestionRows="{
+                                            path: 'plantModel>/',
+                                            length: 10}"
+                                            liveChange="onTokenUpdate"
+                                        >
+                                            <suggestionColumns>
+                                                <Column>
+                                                    <Label text="플랜트"/>
+                                                </Column>
+                                            </suggestionColumns>
+                                            <suggestionRows>
+                                                <ColumnListItem>
+                                                    <Label text="{plantModel>Plant}"/>
+                                                </ColumnListItem>
+                                            </suggestionRows>
+                                        </MultiInput>
+                                    </fb:control>
+                                </fb:FilterGroupItem>
+                                <fb:FilterGroupItem name="OperationCode" label="공정코드" groupName="Group2" visibleInFilterBar="true">
+                                    <fb:control>
+                                        <MultiInput 
+                                            width="15rem" 
+                                            id="VHOpCode" 
+                                            valueHelpRequest="onOpiValueHelp"
+                                            suggestionItemSelected="onOpiSelected"
+                                            suggestionRows="{
+                                            path: 'opiModel>/',
+                                            length: 10}"
+                                            liveChange="onTokenChange"
+                                        >
+                                            <suggestionColumns>
+                                                <Column>
+                                                    <Label text="공정코드"/>
+                                                </Column>
+                                                <Column>
+                                                    <Label text="공정코드명"/>
+                                                </Column>
+                                            </suggestionColumns>
+                                            <suggestionRows>
+                                                <ColumnListItem>
+                                                    <Label text="{opiModel>OperationStandardTextCode}" />
+                                                    <Label text="{opiModel>OperationStandardTextCodeName}" />
+                                                </ColumnListItem>
+                                            </suggestionRows>
+                                        </MultiInput>
+                                    </fb:control>
+                                </fb:FilterGroupItem>
+                                <fb:FilterGroupItem name="WorkCenter" label="작업장" groupName="Group3" visibleInFilterBar="true">
+                                    <fb:control>
+                                        <MultiInput 
+                                            width="15rem"
+                                            id="VHWC"
+                                            valueHelpRequest="onWcValueHelps"
+                                            suggestionItemSelected="onWcSelected"
+                                            suggestionRows="{
+                                            path: 'wcModel>/',
+                                            length: 10}"
+                                            liveChange="onTokenChange"
+                                        >
+                                            <suggestionColumns>
+                                                <Column>
+                                                    <Label text="작업장"/>
+                                                </Column>
+                                                <Column>
+                                                    <Label text="범주"/>
+                                                </Column>
+                                                <Column>
+                                                    <Label text="플랜트"/>
+                                                </Column>
+                                                <Column>
+                                                    <Label text="작업장명"/>
+                                                </Column>
+                                                <Column>
+                                                    <Label text="언어"/>
+                                                </Column>
+                                            </suggestionColumns>
+                                            <suggestionRows>
+                                                <ColumnListItem>
+                                                    <Label text="{wcModel>WorkCenter}" />
+                                                    <Label text="{wcModel>WorkCenterCategoryCode}"/>
+                                                    <Label text="{wcModel>Plant}"/>
+                                                    <Label text="{wcModel>WorkCenterText}"/>
+                                                    <Label text="{wcModel>Language}"/>
+                                                </ColumnListItem>
+                                            </suggestionRows>
+                                        </MultiInput>
+                                    </fb:control>
+                                </fb:FilterGroupItem>
+                            </fb:filterGroupItems>
+                        </fb:FilterBar>
+                    </f:content>
+                </f:DynamicPageHeader>
+            </f:header>
+            <f:content>
+                <Table id="dataTable" inset="false" width="100%" mode="MultiSelect" items="{path: 'dataModel>/Items', sorter: [{path: 'Operationid', descending: false}, {path: 'Workcenter', descending: false}]}">
+                    <headerToolbar>
+                        <OverflowToolbar>
+                            <content>
+                                <Title text="작업 지시"/>
+                                <ToolbarSeparator/>
+                                <vm:VariantManagement id="tableSVM" for="dataTable"/>
+                                <ToolbarSpacer/>
+                                <Button id="add" text="+" press="onAdd"/>
+                                <Button id="delete" text="삭제" press="onDelete"/>
+                                <u:FileUploader id="upload" sameFilenameAllowed="true" iconOnly="false" buttonOnly="true" buttonText="업로드" fileType="XLSX,xlsx" change="onUpload"/>
+                                <Button id="download" text="다운로드" press="onDownload"/>
+                                <Button icon="sap-icon://action-settings" press="openPersoDialog" tooltip="Settings"/>
+                            </content>
+                        </OverflowToolbar>
+                    </headerToolbar>
+                    <columns>
+                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="플랜트" wrapping="false" tooltip="플랜트"/>
+                        </Column>
+                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="공정코드" wrapping="false" tooltip="공정코드"/>
+                        </Column>
+                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="공정명" wrapping="false" tooltip="공정명"/>
+                        </Column>
+                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="작업장" wrapping="false" tooltip="작업장"/>
+                        </Column>
+                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="작업장명" wrapping="false" tooltip="작업장명"/>
+                        </Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem vAlign="Middle" type="Inactive"> <!-- 테이블 네비게이션바 비활성화 -->
+                            <cells>
+                                <Text text="{dataModel>Plant}" wrapping="false"/>
+                                <Input
+                                    id="operationid"
+                                    type="Text"
+                                    showValueHelp="true"
+                                    valueHelpRequest="opiValueHelp"
+                                    value="{dataModel>Operationid}"
+                                    suggestionItemSelected="opitableSelected"
+                                    showSuggestion="true"
+                                    suggestionItems="{
+                                        path: 'opiModel>/',
+                                        templateShareable: false
+                                    }"
+                                    liveChange="onOpiLiveChange"
+                                >
+                                    <suggestionItems>
+                                        <SuggestionItem text="{opiModel>OperationStandardTextCode}" key="{opiModel>OperationStandardTextCode}" />
+                                    </suggestionItems>
+                                </Input>
+
+                                <Text text="{dataModel>OperationidText}" wrapping="false"/> 
+                                <Input
+                                    id="workcenter"
+                                    type="Text"
+                                    showValueHelp="true"
+                                    valueHelpRequest="wcValueHelp"
+                                    value="{dataModel>Workcenter}"
+                                    suggestionItemSelected="wctableSelected"
+                                    showSuggestion="true"
+                                    suggestionItems="{
+                                        path: 'wcModel>/',
+                                        templateShareable: false
+                                    }"
+                                    liveChange="onWcLiveChange"
+                                >
+                                    <suggestionItems>
+                                        <SuggestionItem text="{wcModel>WorkCenter}" key="{wcModel>WorkCenter}" />
+                                    </suggestionItems>
+                                </Input>
+                                   
+                                <Text text="{dataModel>WorkcenterText}" wrapping="false"/>
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </f:content>
+            <f:footer>
+                <OverflowToolbar>
+                    <ToolbarSpacer/>
+                    <Button id="btnSave" type="Emphasized" text="저장" press="onSave"/>
+                    <Button type="Ghost" text="취소" press="onCancel"/>
+                </OverflowToolbar>
+            </f:footer>
+        </f:DynamicPage>
+    <!-- </Page> -->
+</mvc:View>

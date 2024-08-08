@@ -10,7 +10,8 @@
         cancel="onPlantCancel"
         afterClose="onPlantClose"
         supportRanges="true"
-        key="Plant">
+        key="Plant"
+        >
         <filterBar>
             <fb:FilterBar
                 advancedMode="true"
