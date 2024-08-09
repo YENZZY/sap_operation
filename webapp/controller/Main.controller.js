@@ -17,18 +17,30 @@ sap.ui.define([
     'sap/m/Column',
     'sap/ui/table/Column',
     'sap/m/Text',
+    'sap/m/Input',
+    'sap/m/library',
+    'sap/m/SuggestionItem',
     'sap/ui/export/Spreadsheet',
     'sap/ui/core/Fragment',
     'sap/ui/core/library',
     'sap/ui/comp/smartvariants/PersonalizableInfo',
     'sap/m/p13n/Engine',
+    'sap/m/p13n/SelectionController',
+	'sap/m/p13n/SortController',
+	'sap/m/p13n/GroupController',
+	'sap/m/p13n/MetadataHelper',
+    'sap/ui/model/Sorter',
+    'sap/m/table/ColumnWidthController',
     'operation/js/xlsx',
     'operation/js/jszip'
-], function (Controller, JSONModel, MessageBox, MessageToast, ValueHelpDialog, coreLibrary, SearchField, MultiInput, TypeString, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Spreadsheet, Fragment, ValueState, PersonalizableInfo, Engine, SelectionController, SortController, GroupController, FilterController, MetadataHelper, Sorter, ColumnWidthController) {
+], function (Controller,
+     JSONModel,
+     MessageBox, MessageToast, ValueHelpDialog, coreLibrary, SearchField, MultiInput, TypeString, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Input, library, SuggestionItem, Spreadsheet, Fragment, ValueState, PersonalizableInfo, Engine, SelectionController, SortController, GroupController, MetadataHelper, Sorter, ColumnWidthController) {
     "use strict";
 
     var EdmType = exportLibrary.EdmType;
     var ValueState = sap.ui.core.ValueState;
+    var InputType = library.InputType;
 
     return Controller.extend("operation.controller.Main", {
         onInit: function () {
@@ -94,7 +106,7 @@ sap.ui.define([
             oWcInput.attachBrowserEvent("focusout", this.onWcFocusOut.bind(this));
             
             // table standard (start)
-            //this._registerForP13n(); // 테이블을 개인화 엔진에 등록하는 것
+            this._registerForP13n(); // 테이블을 개인화 엔진에 등록하는 것
         },
 
         setDefaultValues: function () {
@@ -168,7 +180,7 @@ sap.ui.define([
                         item.OperationidText = opidataText;
                     });
                     // 데이터 읽기 성공 시 JSON 모델로 설정
-                    this.setModel(new JSONModel({ Items: aGetData }), "dataModel");
+                    this.setModel(new JSONModel({ items: aGetData }), "dataModel");
                     this.MultiInputs("VHWC"); // 필터_작업장
                     this.MultiInputs("VHOpCode"); // 필터_공정코드
                     this.MultiInputs("VHPlant", true); //필터_플랜트
@@ -250,17 +262,6 @@ sap.ui.define([
             return aFiltersWithValue;
         },
         //  svm : standard (end)
-
-        // setting 버튼
-        openPersoDialog: function(oEvt) {
-            var oTable = this.byId("dataTable");
-
-            Engine.getInstance().show(oTable, ["columns"], {
-                contentHeight: "35rem",
-                contentWidth: "32rem",
-                source: oEvt.getSource()
-            });
-        },
 
         // 필터 검색
         onSearch: function () {
@@ -348,7 +349,7 @@ sap.ui.define([
         onSave: function () {
             var oMainModel = this.getOwnerComponent().getModel();
             var oDataModel = this.getModel("dataModel"); // 테이블 데이터
-            var aData = oDataModel.getData().Items;
+            var aData = oDataModel.getData().items;
             
             // 유효성 검사: 유효하지 않은 공정 코드가 있는지 확인
             var oOpiModel = this.getModel("opiModel").getData();
@@ -468,7 +469,7 @@ sap.ui.define([
             var oModel = this.getModel("opiModel");
             var aData = oModel.getData();
             var oDataModel = this.getModel("dataModel");
-            var items = oDataModel.getData().Items;
+            var items = oDataModel.getData().items;
 
             if (sOperationId === "") { // 빈 문자열일 경우 초기화
                 items[this.inputRow].Operationid = "";
@@ -518,7 +519,7 @@ sap.ui.define([
                 if (oMatch) {
                     var sText = oMatch.OperationStandardTextCodeName;
                     var oDataModel = this.getModel("dataModel");
-                    var items = oDataModel.getData().Items;
+                    var items = oDataModel.getData().items;
                     items[this.inputRow].Operationid = sOperationId;
                     items[this.inputRow].OperationidText = sText;
                     
@@ -551,7 +552,7 @@ sap.ui.define([
             if (oSelectedItem) {
                 var sPath = oSelectedItem.getBindingContext("opiModel").getPath();
                 var oSelectedData = this.getModel("opiModel").getProperty(sPath);
-                var items = this.getModel("dataModel").getData().Items;
+                var items = this.getModel("dataModel").getData().items;
                 items[this.inputRow].Operationid = oSelectedData.OperationStandardTextCode;
     
                 items[this.inputRow].OperationidText = oSelectedData.OperationStandardTextCodeName;
@@ -590,7 +591,7 @@ sap.ui.define([
             var oModel = this.getModel("wcModel");
             var aData = oModel.getData();
             var oDataModel = this.getModel("dataModel");
-            var items = oDataModel.getData().Items;
+            var items = oDataModel.getData().items;
 
             if (sWorkcenter === "") { // 빈 문자열일 경우 초기화
                 items[this.inputRow].Workcenter = "";
@@ -628,7 +629,7 @@ sap.ui.define([
             var oModel = this.getModel("wcModel");
             var aData = oModel.getData();
             var oDataModel = this.getModel("dataModel");
-            var items = oDataModel.getData().Items;
+            var items = oDataModel.getData().items;
 
             if (oSelectedItem) {
                 var sWorkcenter = oSelectedItem.getKey(); // 작업장
@@ -672,7 +673,7 @@ sap.ui.define([
             if (oSelectedItem) {
                 var sPath = oSelectedItem.getBindingContext("wcModel").getPath();
                 var oSelectedData = this.getModel("wcModel").getProperty(sPath);
-                var items = this.getModel("dataModel").getData().Items;
+                var items = this.getModel("dataModel").getData().items;
                 items[this.inputRow].Workcenter = oSelectedData.WorkCenter;
         
                 items[this.inputRow].WorkcenterText = oSelectedData.WorkCenterText;
@@ -1299,13 +1300,13 @@ sap.ui.define([
 
         // 플랜트 필터 (테이블 필터링)
         PlantFilter: function () {
-            var oTable = this.byId("dataTable");
-            if (!oTable) {
+            var odelTable = this.byId("dataTable");
+            if (!odelTable) {
                 MessageBox.error("테이블을 찾을 수가 없습니다.");
                 return;
             }
         
-            var oBinding = oTable.getBinding("items");
+            var oBinding = odelTable.getBinding("items");
             if (!oBinding) {
                 MessageBox.error("테이블에서 아이템 바인딩을 할 데이터를 찾을 수 없습니다.");
                 return;
@@ -1341,12 +1342,12 @@ sap.ui.define([
 
                     // dataModel에서 기존 데이터를 가져옴
                     var oDataModel = this.getModel("dataModel");
-                    var aItems = oDataModel.getProperty("/Items") || [];
+                    var aItems = oDataModel.getProperty("/items") || [];
 
                     // 새로운 행을 맨 앞에 추가
                     aItems.unshift(oItem);
 
-                    oDataModel.setProperty("/Items", aItems);
+                    oDataModel.setProperty("/items", aItems);
 
                     // 바인딩 업데이트
                     oDataModel.updateBindings();
@@ -1359,10 +1360,10 @@ sap.ui.define([
 
         // 데이터 삭제 버튼
         onDelete: function () {
-            var oTable = this.byId("dataTable");
-            var aSelectedItems = oTable.getSelectedItems(); // 선택된 항목을 가져오기
+            var odelTable = this.byId("dataTable");
+            var aSelectedItems = odelTable.getSelectedItems(); // 선택된 항목을 가져오기
             var oDataModel = this.getModel("dataModel");
-            var aData = oDataModel.getProperty("/Items");
+            var aData = oDataModel.getProperty("/items");
 
             if (aSelectedItems.length === 0) {
                 MessageBox.error("선택한 항목이 없습니다.");
@@ -1397,13 +1398,13 @@ sap.ui.define([
             });
 
             // 모델의 데이터 업데이트
-            oDataModel.setProperty("/Items", aData);
+            oDataModel.setProperty("/items", aData);
 
             // 모델 새로고침
             oDataModel.refresh();
             
             // 선택 해제
-            oTable.removeSelections(true);
+            odelTable.removeSelections(true);
 
             // 성공 메시지 박스 표시
             MessageBox.success("선택하신 항목이 임시로 삭제되었습니다. 변경 사항을 저장하려면 저장 버튼을 눌러주세요.");
@@ -1575,7 +1576,7 @@ sap.ui.define([
                             }
 
                             //기존 데이터에 있는지 확인
-                            var aFilterOpi = this.getModel("dataModel").getData().Items.filter(function (item) {
+                            var aFilterOpi = this.getModel("dataModel").getData().items.filter(function (item) {
                                 return item.Operationid && item.Workcenter;
                             });
                             // 중복 확인을 위한 객체 생성
@@ -1623,335 +1624,339 @@ sap.ui.define([
         },
 
         // table standard (vm)
+          // setting 버튼
+          openPersoDialog: function(oEvt) {
+            this._openPersoDialog(["Columns", "Sorter", "Groups"], oEvt.getSource());
+        },
+
+        _openPersoDialog: function(aPanels, oSource) {
+            var oTable = this.byId("dataTable");
+
+            Engine.getInstance().show(oTable, aPanels, {
+                contentHeight: aPanels.length > 1 ? "50rem" : "35rem",
+                contentWidth: aPanels.length > 1 ? "45rem" : "32rem",
+                source: oSource || oTable
+            });
+        },
           // vm standard  개인화 엔진을 설정하고 테이블을 등록
         _registerForP13n: function() {
 			const oTable = this.byId("dataTable");
 
 			this.oMetadataHelper = new MetadataHelper([{
-					key: "Plant",
+					key: "plant_col",   // id 값
 					label: "플랜트",
-					path: "Plant"
+					path: "dataModel>Plant"   //db
 				},
 				{
-					key: "Operationid",
+					key: "operationid_col",
 					label: "공정코드",
-					path: "Operationid"
+					path: "dataModel>Operationid"
 				},
 				{
-					key: "OperationidText",
+					key: "operationidText_col",
 					label: "공정코드명",
-					path: "OperationidText"
+					path: "dataModel>OperationidText"
 				},
 				{
-					key: "Workcenter",
+					key: "workcenter_col",
 					label: "작업장",
-					path: "Workcenter"
+					path: "dataModel>Workcenter"
 				},
                 {
-					key: "WorkcenterText",
+					key: "workcenterText_col",
 					label: "작업장명",
-					path: "WorkcenterText"
+					path: "dataModel>WorkcenterText"
 				}
 			]);
+            console.log("this.omh",this.oMetadataHelper);
+            Engine.getInstance().register(oTable, {
+                helper: this.oMetadataHelper,
+                controller: {
+                    Columns: new SelectionController({
+                        targetAggregation: "columns",
+                        control: oTable
+                    }),
+                    Sorter: new SortController({
+                        control: oTable
+                    }),
+                    Groups: new GroupController({
+                        control: oTable
+                    }),
+                    ColumnWidth: new ColumnWidthController({
+                        control: oTable
+                    }),
+                }
+            });
 
-			Engine.getInstance().register(oTable, {
-				helper: this.oMetadataHelper,
-				controller: {
-					Columns: new SelectionController({
-						targetAggregation: "columns",
-						control: oTable
-					}),
-					Sorter: new SortController({
-						control: oTable
-					}),
-					Groups: new GroupController({
-						control: oTable
-					}),
-					ColumnWidth: new ColumnWidthController({
-						control: oTable
-					}),
-					Filter: new FilterController({
-						control: oTable
-					})
-				}
-			});
+            Engine.getInstance().attachStateChange(this.handleStateChange.bind(this));
+        },
 
-			Engine.getInstance().attachStateChange(this.handleStateChange.bind(this));
-		},
+     
 
-		openPersoDialog: function(oEvt) {
-			this._openPersoDialog(["Columns", "Sorter", "Groups", "Filter"], oEvt.getSource());
-		},
-
-		_openPersoDialog: function(aPanels, oSource) {
-			var oTable = this.byId("dataTable");
-
-			Engine.getInstance().show(oTable, aPanels, {
-				contentHeight: aPanels.length > 1 ? "50rem" : "35rem",
-				contentWidth: aPanels.length > 1 ? "45rem" : "32rem",
-				source: oSource || oTable
-			});
-		},
-
-		_getKey: function(oControl) {
-			return this.getView().getLocalId(oControl.getId());
-		},
+        _getKey: function(oControl) {
+            return this.getView().getLocalId(oControl.getId());
+        },
 
         // handleStateChange 함수는 개인화 상태가 변경될 때 호출, 변경된 상태를 반영하여 테이블을 업데이트
-		handleStateChange: function(oEvt) {
-			const oTable = this.byId("dataTable");
-			const oState = oEvt.getParameter("state");
-
-			if (!oState) {
-				return;
-			}
-
-			 // 선택된 상태에 따라 열을 업데이트
-			this.updateColumns(oState);
-
-			// 필터 및 정렬 생성
-			const aFilter = this.createFilters(oState);
-			const aGroups = this.createGroups(oState);
-			const aSorter = this.createSorters(oState, aGroups);
-
-			const aCells = oState.Columns.map(function(oColumnState) {
-				return new Text({
-					text: "{" + this.oMetadataHelper.getProperty(oColumnState.key).path + "}"
-				});
-			}.bind(this));
-
-			// 업데이트된 셀 템플릿으로 테이블을 다시 바인딩
-			oTable.bindItems({
-				templateShareable: false,
-				path: 'dataModel>/Items',
-				sorter: aSorter.concat(aGroups),
-				filters: aFilter,
-				template: new ColumnListItem({
-					cells: aCells
-				})
-			});
-
-		},
-
-        //createFilters 함수는 현재 상태를 기반으로 필터를 생성
-		createFilters: function(oState) {
-			const aFilter = [];
-			Object.keys(oState.Filter).forEach((sFilterKey) => {
-				const filterPath = this.oMetadataHelper.getProperty(sFilterKey).path;
-
-				oState.Filter[sFilterKey].forEach(function(oConditon) {
-					aFilter.push(new Filter(filterPath, oConditon.operator, oConditon.values[0]));
-				});
-			});
-
-			this.byId("filterInfo").setVisible(aFilter.length > 0);
-
-			return aFilter;
-		},
+        handleStateChange: function(oEvt) {
+            const oTable = this.byId("dataTable");
+            const oState = oEvt.getParameter("state");
+        
+            if (!oState) {
+                return;
+            }
+        
+            // Update columns based on state
+            this.updateColumns(oState);
+        
+            // Create filters and sorters
+            const aGroups = this.createGroups(oState);
+            const aSorter = this.createSorters(oState, aGroups);
+        
+            // Create new cell templates
+            const aCells = oState.Columns.map(function(oColumnState) {
+                const sPath = this.oMetadataHelper.getProperty(oColumnState.key).path;
+        
+                if (oColumnState.key === "operationid_col") {
+                    return new Input({
+                        id: "operationid_" + jQuery.now(), // ID 재생성
+                        value: "{" + sPath + "}",
+                        type: InputType.Text, 
+                        showValueHelp: true,
+                        valueHelpRequest: this.opiValueHelp.bind(this),
+                        suggestionItemSelected: this.opitableSelected.bind(this),
+                        showSuggestion: true,
+                        suggestionItems: {
+                            path: 'opiModel>/',
+                            templateShareable: false,
+                            template: new SuggestionItem({
+                                text: "{opiModel>OperationStandardTextCode}",
+                                key: "{opiModel>OperationStandardTextCode}"
+                            })
+                        },
+                        liveChange: this.onOpiLiveChange.bind(this)
+                    });
+                } else if (oColumnState.key === "workcenter_col") {
+                    return new Input({
+                        id: "workcenter_" + jQuery.now(), // ID 재생성
+                        value: "{" + sPath + "}",
+                        type: InputType.Text,
+                        showValueHelp: true,
+                        valueHelpRequest: this.wcValueHelp.bind(this),
+                        suggestionItemSelected: this.wctableSelected.bind(this),
+                        showSuggestion: true,
+                        suggestionItems: {
+                            path: 'wcModel>/',
+                            templateShareable: false,
+                            template: new SuggestionItem({
+                                text: "{wcModel>WorkCenter}",
+                                key: "{wcModel>WorkCenter}"
+                            })
+                        },
+                        liveChange: this.onWcLiveChange.bind(this)
+                    });
+                } else {
+                    return new Text({
+                        text: "{" + sPath + "}"
+                    });
+                }
+            }.bind(this));
+        
+            // Re-bind table items with updated template
+            oTable.bindItems({
+                templateShareable: false,
+                path: 'dataModel>/items',
+                sorter: aSorter.concat(aGroups),
+                template: new ColumnListItem({
+                    cells: aCells
+                })
+            });
+        },        
 
          //createSorters 함수는 현재 상태를 기반으로 정렬 생성
-		createSorters: function(oState, aExistingSorter) {
-			const aSorter = aExistingSorter || [];
-			oState.Sorter.forEach(function(oSorter) {
-				const oExistingSorter = aSorter.find(function(oSort) {
-					return oSort.sPath === this.oMetadataHelper.getProperty(oSorter.key).path;
-				}.bind(this));
+        createSorters: function(oState, aExistingSorter) {
+            const aSorter = aExistingSorter || [];
+            oState.Sorter.forEach(function(oSorter) {
+                const oExistingSorter = aSorter.find(function(oSort) {
+                    return oSort.sPath === this.oMetadataHelper.getProperty(oSorter.key).path;
+                }.bind(this));
 
-				if (oExistingSorter) {
-					oExistingSorter.bDescending = !!oSorter.descending;
-				} else {
-					aSorter.push(new Sorter(this.oMetadataHelper.getProperty(oSorter.key).path, oSorter.descending));
-				}
-			}.bind(this));
+                if (oExistingSorter) {
+                    oExistingSorter.bDescending = !!oSorter.descending;
+                } else {
+                    aSorter.push(new Sorter(this.oMetadataHelper.getProperty(oSorter.key).path, oSorter.descending));
+                }
+            }.bind(this));
 
-			oState.Sorter.forEach(function(oSorter) {
-				const oCol = this.byId(oSorter.key);
-				if (oSorter.sorted !== false) {
-					oCol.setSortIndicator(oSorter.descending ? coreLibrary.SortOrder.Descending : coreLibrary.SortOrder.Ascending);
-				}
-			}.bind(this));
+            oState.Sorter.forEach(function(oSorter) {
+                const oCol = this.byId(oSorter.key);
+                if (oSorter.sorted !== false) {
+                    oCol.setSortIndicator(oSorter.descending ? coreLibrary.SortOrder.Descending : coreLibrary.SortOrder.Ascending);
+                }
+            }.bind(this));
 
-			return aSorter;
-		},
+            return aSorter;
+        },
 
         // createGroups 함수는 현재 상태를 기반으로 그룹을 생성
-		createGroups: function(oState) {
-			const aGroupings = [];
-			oState.Groups.forEach(function(oGroup) {
-				aGroupings.push(new Sorter(this.oMetadataHelper.getProperty(oGroup.key).path, false, true));
-			}.bind(this));
+        createGroups: function(oState) {
+            const aGroupings = [];
+            oState.Groups.forEach(function(oGroup) {
+                aGroupings.push(new Sorter(this.oMetadataHelper.getProperty(oGroup.key).path, false, true));
+            }.bind(this));
 
-			oState.Groups.forEach(function(oSorter) {
-				const oCol = this.byId(oSorter.key);
-				oCol.data("grouped", true);
-			}.bind(this));
+            oState.Groups.forEach(function(oSorter) {
+                const oCol = this.byId(oSorter.key);
+                oCol.data("grouped", true);
+            }.bind(this));
 
-			return aGroupings;
-		},
+            return aGroupings;
+        },
 
         // updateColumns 함수는 현재 상태를 기반으로 열을 업데이트
-		updateColumns: function(oState) {
-			const oTable = this.byId("dataTable");
-
-			oTable.getColumns().forEach(function(oColumn, iIndex) {
-				oColumn.setVisible(false);
-				oColumn.setWidth(oState.ColumnWidth[this._getKey(oColumn)]);
-				oColumn.setSortIndicator(coreLibrary.SortOrder.None);
-				oColumn.data("grouped", false);
-			}.bind(this));
-
-			oState.Columns.forEach(function(oProp, iIndex) {
-				const oCol = this.byId(oProp.key);
-				oCol.setVisible(true);
-
-				oTable.removeColumn(oCol);
-				oTable.insertColumn(oCol, iIndex);
-			}.bind(this));
-		},
+        updateColumns: function(oState) {
+            const oTable = this.byId("dataTable");
+        
+            oTable.getColumns().forEach(function(oColumn) {
+                oColumn.setVisible(false);
+                oColumn.setWidth(oState.ColumnWidth[this._getKey(oColumn)]);
+                oColumn.setSortIndicator(coreLibrary.SortOrder.None);
+                oColumn.data("grouped", false);
+            }.bind(this));
+        
+            oState.Columns.forEach(function(oProp, iIndex) {
+                const oCol = this.byId(oProp.key);
+                if (oCol) {
+                    oCol.setVisible(true);
+                    oTable.removeColumn(oCol);
+                    oTable.insertColumn(oCol, iIndex);
+                }
+            }.bind(this));
+        },
 
         // beforeOpenColumnMenu 함수는 열 메뉴가 열리기 전에 호출되며, 메뉴 항목을 설정
-		beforeOpenColumnMenu: function(oEvt) {
-			const oMenu = this.byId("menu");
-			const oColumn = oEvt.getParameter("openBy");
-			const oSortItem = oMenu.getQuickActions()[0].getItems()[0];
-			const oGroupItem = oMenu.getQuickActions()[1].getItems()[0];
+        beforeOpenColumnMenu: function(oEvt) {
+            const oMenu = this.byId("menu");
+            const oColumn = oEvt.getParameter("openBy");
+            const oSortItem = oMenu.getQuickActions()[0].getItems()[0];
+            const oGroupItem = oMenu.getQuickActions()[1].getItems()[0];
 
-			oSortItem.setKey(this._getKey(oColumn));
-			oSortItem.setLabel(oColumn.getHeader().getText());
-			oSortItem.setSortOrder(oColumn.getSortIndicator());
+            oSortItem.setKey(this._getKey(oColumn));
+            oSortItem.setLabel(oColumn.getHeader().getText());
+            oSortItem.setSortOrder(oColumn.getSortIndicator());
 
-			oGroupItem.setKey(this._getKey(oColumn));
-			oGroupItem.setLabel(oColumn.getHeader().getText());
-			oGroupItem.setGrouped(oColumn.data("grouped"));
-		},
+            oGroupItem.setKey(this._getKey(oColumn));
+            oGroupItem.setLabel(oColumn.getHeader().getText());
+            oGroupItem.setGrouped(oColumn.data("grouped"));
+        },
 
         // 열 클릭 시 대화 상자 열기 (열 헤더 아이템을 클릭했을 때 적절한 개인화 대화 상자 열림)
-		onColumnHeaderItemPress: function(oEvt) {
-			const oColumnHeaderItem = oEvt.getSource();
-			let sPanel = "Columns";
-			if (oColumnHeaderItem.getIcon().indexOf("group") >= 0) {
-				sPanel = "Groups";
-			} else if (oColumnHeaderItem.getIcon().indexOf("sort") >= 0) {
-				sPanel = "Sorter";
-			} else if (oColumnHeaderItem.getIcon().indexOf("filter") >= 0) {
-				sPanel = "Filter";
-			}
+        onColumnHeaderItemPress: function(oEvt) {
+            const oColumnHeaderItem = oEvt.getSource();
+            let sPanel = "Columns";
+            if (oColumnHeaderItem.getIcon().indexOf("group") >= 0) {
+                sPanel = "Groups";
+            } else if (oColumnHeaderItem.getIcon().indexOf("sort") >= 0) {
+                sPanel = "Sorter";
+            } 
 
-			this._openPersoDialog([sPanel]);
-		},
+            this._openPersoDialog([sPanel]);
+        },
 
-        // 필터 정보 클릭 시 필터 대화 상자 열기
-		onFilterInfoPress: function(oEvt) {
-			this._openPersoDialog(["Filter"], oEvt.getSource());
-		},
+        onSort: function(oEvt) {
+            const oSortItem = oEvt.getParameter("item");
+            const oTable = this.byId("dataTable");
+            const sAffectedProperty = oSortItem.getKey();
+            const sSortOrder = oSortItem.getSortOrder();
 
-		onSort: function(oEvt) {
-			const oSortItem = oEvt.getParameter("item");
-			const oTable = this.byId("dataTable");
-			const sAffectedProperty = oSortItem.getKey();
-			const sSortOrder = oSortItem.getSortOrder();
+            //Apply the state programatically on sorting through the column menu
+            //1) Retrieve the current personalization state
+            Engine.getInstance().retrieveState(oTable).then(function(oState) {
 
-			//Apply the state programatically on sorting through the column menu
-			//1) Retrieve the current personalization state
-			Engine.getInstance().retrieveState(oTable).then(function(oState) {
+                //2) Modify the existing personalization state --> clear all sorters before
+                oState.Sorter.forEach(function(oSorter) {
+                    oSorter.sorted = false;
+                });
 
-				//2) Modify the existing personalization state --> clear all sorters before
-				oState.Sorter.forEach(function(oSorter) {
-					oSorter.sorted = false;
-				});
+                if (sSortOrder !== coreLibrary.SortOrder.None) {
+                    oState.Sorter.push({
+                        key: sAffectedProperty,
+                        descending: sSortOrder === coreLibrary.SortOrder.Descending
+                    });
+                }
 
-				if (sSortOrder !== coreLibrary.SortOrder.None) {
-					oState.Sorter.push({
-						key: sAffectedProperty,
-						descending: sSortOrder === coreLibrary.SortOrder.Descending
-					});
-				}
-
-				//3) Apply the modified personalization state to persist it in the VariantManagement
-				Engine.getInstance().applyState(oTable, oState);
-			});
-		},
+                //3) Apply the modified personalization state to persist it in the VariantManagement
+                Engine.getInstance().applyState(oTable, oState);
+            });
+        },
 
         // 그룹화
-		onGroup: function(oEvt) {
-			const oGroupItem = oEvt.getParameter("item");
-			const oTable = this.byId("dataTable");
-			const sAffectedProperty = oGroupItem.getKey();
+        onGroup: function(oEvt) {
+            const oGroupItem = oEvt.getParameter("item");
+            const oTable = this.byId("dataTable");
+            const sAffectedProperty = oGroupItem.getKey();
 
-			//1) Retrieve the current personalization state
-			Engine.getInstance().retrieveState(oTable).then(function(oState) {
+            //1) Retrieve the current personalization state
+            Engine.getInstance().retrieveState(oTable).then(function(oState) {
 
-				//2) Modify the existing personalization state --> clear all groupings before
-				oState.Groups.forEach(function(oSorter) {
-					oSorter.grouped = false;
-				});
+                //2) Modify the existing personalization state --> clear all groupings before
+                oState.Groups.forEach(function(oSorter) {
+                    oSorter.grouped = false;
+                });
 
-				if (oGroupItem.getGrouped()) {
-					oState.Groups.push({
-						key: sAffectedProperty
-					});
-				}
+                if (oGroupItem.getGrouped()) {
+                    oState.Groups.push({
+                        key: sAffectedProperty
+                    });
+                }
 
-				//3) Apply the modified personalization state to persist it in the VariantManagement
-				Engine.getInstance().applyState(oTable, oState);
-			});
-		},
+                //3) Apply the modified personalization state to persist it in the VariantManagement
+                Engine.getInstance().applyState(oTable, oState);
+            });
+        },
 
         // 열 이동 및 크기 조정
-		onColumnMove: function(oEvt) {
-			const oDraggedColumn = oEvt.getParameter("draggedControl");
-			const oDroppedColumn = oEvt.getParameter("droppedControl");
+        onColumnMove: function(oEvt) {
+            const oDraggedColumn = oEvt.getParameter("draggedControl");
+            const oDroppedColumn = oEvt.getParameter("droppedControl");
 
-			if (oDraggedColumn === oDroppedColumn) {
-				return;
-			}
+            if (oDraggedColumn === oDroppedColumn) {
+                return;
+            }
 
-			const oTable = this.byId("dataTable");
-			const sDropPosition = oEvt.getParameter("dropPosition");
-			const iDraggedIndex = oTable.indexOfColumn(oDraggedColumn);
-			const iDroppedIndex = oTable.indexOfColumn(oDroppedColumn);
-			const iNewPos = iDroppedIndex + (sDropPosition == "Before" ? 0 : 1) + (iDraggedIndex < iDroppedIndex ? -1 : 0);
-			const sKey = this._getKey(oDraggedColumn);
+            const oTable = this.byId("dataTable");
+            const sDropPosition = oEvt.getParameter("dropPosition");
+            const iDraggedIndex = oTable.indexOfColumn(oDraggedColumn);
+            const iDroppedIndex = oTable.indexOfColumn(oDroppedColumn);
+            const iNewPos = iDroppedIndex + (sDropPosition == "Before" ? 0 : 1) + (iDraggedIndex < iDroppedIndex ? -1 : 0);
+            const sKey = this._getKey(oDraggedColumn);
 
-			Engine.getInstance().retrieveState(oTable).then(function(oState) {
+            Engine.getInstance().retrieveState(oTable).then(function(oState) {
 
-				const oCol = oState.Columns.find(function(oColumn) {
-					return oColumn.key === sKey;
-				}) || {
-					key: sKey
-				};
-				oCol.position = iNewPos;
+                const oCol = oState.Columns.find(function(oColumn) {
+                    return oColumn.key === sKey;
+                }) || {
+                    key: sKey
+                };
+                oCol.position = iNewPos;
 
-				Engine.getInstance().applyState(oTable, {
-					Columns: [oCol]
-				});
-			});
-		},
+                Engine.getInstance().applyState(oTable, {
+                    Columns: [oCol]
+                });
+            });
+        },
 
-		onColumnResize: function(oEvt) {
-			const oColumn = oEvt.getParameter("column");
-			const sWidth = oEvt.getParameter("width");
-			const oTable = this.byId("dataTable");
+        onColumnResize: function(oEvt) {
+            const oColumn = oEvt.getParameter("column");
+            const sWidth = oEvt.getParameter("width");
+            const oTable = this.byId("dataTable");
 
-			const oColumnState = {};
-			oColumnState[this._getKey(oColumn)] = sWidth;
+            const oColumnState = {};
+            oColumnState[this._getKey(oColumn)] = sWidth;
 
-			Engine.getInstance().applyState(oTable, {
-				ColumnWidth: oColumnState
-			});
-		},
-
-        // 필터 초기화
-		onClearFilterPress: function(oEvt) {
-			const oTable = this.byId("dataTable");
-			Engine.getInstance().retrieveState(oTable).then(function(oState) {
-				for (var sKey in oState.Filter) {
-					oState.Filter[sKey].map((condition) => {
-						condition.filtered = false;
-					});
-				}
-				Engine.getInstance().applyState(oTable, oState);
-			});
-		}
+            Engine.getInstance().applyState(oTable, {
+                ColumnWidth: oColumnState
+            });
+        }
     });
 });

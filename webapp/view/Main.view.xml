@@ -9,6 +9,11 @@
     xmlns:u="sap.ui.unified"
     xmlns:svm="sap.ui.comp.smartvariants"
     xmlns:vm="sap.ui.fl.variants"
+    xmlns:plugins="sap.m.plugins"
+    xmlns:columnmenu="sap.m.table.columnmenu"
+    xmlns:sap.ui.fl="sap.ui.fl"
+    xmlns:sap.ui.dt="sap.ui.dt"
+    xmlns:dnd="sap.ui.core.dnd"
     >
     <!-- <Page id="page" title="{i18n>title}"> -->
         <f:DynamicPage showFooter="true">
@@ -133,11 +138,12 @@
                 </f:DynamicPageHeader>
             </f:header>
             <f:content>
-                <Table id="dataTable" inset="false" width="100%" mode="MultiSelect" items="{path: 'dataModel>/Items', sorter: [{path: 'Operationid', descending: false}, {path: 'Workcenter', descending: false}]}">
+                <Table id="dataTable" inset="false" width="100%" mode="MultiSelect" items="{path: 'dataModel>/items', sorter: [{path: 'Operationid', descending: false}, {path: 'Workcenter', descending: false}]}" ariaLabelledBy="title" fixedLayout="Strict"
+		                autoPopinMode="true" growing="true" sticky="ColumnHeaders,HeaderToolbar" popinLayout="GridSmall">
                     <headerToolbar>
                         <OverflowToolbar>
                             <content>
-                                <Title text="작업 지시"/>
+                                <Title id="title" text="작업 지시"/>
                                 <ToolbarSeparator/>
                                 <vm:VariantManagement id="tableSVM" for="dataTable"/>
                                 <ToolbarSpacer/>
@@ -149,27 +155,56 @@
                             </content>
                         </OverflowToolbar>
                     </headerToolbar>
+                    <dependents>
+                        <plugins:ColumnResizer columnResize="onColumnResize"/>
+                        <columnmenu:Menu id="menu" beforeOpen="beforeOpenColumnMenu">
+                            <columnmenu:QuickSort change="onSort">
+                                <columnmenu:items>
+                                    <columnmenu:QuickSortItem></columnmenu:QuickSortItem>
+                                </columnmenu:items>
+                            </columnmenu:QuickSort>
+                            <columnmenu:QuickGroup change="onGroup">
+                                <columnmenu:items>
+                                    <columnmenu:QuickGroupItem></columnmenu:QuickGroupItem>
+                                </columnmenu:items>
+                            </columnmenu:QuickGroup>
+                            <columnmenu:items>
+                                <columnmenu:ActionItem icon="sap-icon://sort" label="Sort" press="onColumnHeaderItemPress"/>
+                                <columnmenu:ActionItem icon="sap-icon://group-2" label="Group" press="onColumnHeaderItemPress"/>
+                                <columnmenu:ActionItem icon="sap-icon://filter" label="Filter" press="onColumnHeaderItemPress"/>
+                                <columnmenu:ActionItem icon="sap-icon://table-column" label="Columns" press="onColumnHeaderItemPress"/>
+                            </columnmenu:items>
+                        </columnmenu:Menu>
+                    </dependents>
+                    <dragDropConfig>
+                        <dnd:DragDropInfo sourceAggregation="columns" targetAggregation="columns" dropPosition="Between" drop="onColumnMove"/>
+                    </dragDropConfig>
+                    <noData>
+                        <IllustratedMessage/>
+                    </noData>
                     <columns>
-                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
-                            <Text text="플랜트" wrapping="false" tooltip="플랜트"/>
+                        <Column id="plant_col" hAlign="Center" minScreenWidth="Tablet" demandPopin="true" headerMenu="menu">
+                            <header>
+                                <Text text="플랜트" wrapping="false" tooltip="플랜트"/>
+                            </header>
                         </Column>
-                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                        <Column id="operationid_col" hAlign="Center" minScreenWidth="Tablet" demandPopin="true" headerMenu="menu">
                             <Text text="공정코드" wrapping="false" tooltip="공정코드"/>
                         </Column>
-                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                        <Column id="operationidText_col" hAlign="Center" minScreenWidth="Tablet" demandPopin="true" headerMenu="menu">
                             <Text text="공정명" wrapping="false" tooltip="공정명"/>
                         </Column>
-                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                        <Column id="workcenter_col" hAlign="Center" minScreenWidth="Tablet" demandPopin="true" headerMenu="menu">
                             <Text text="작업장" wrapping="false" tooltip="작업장"/>
                         </Column>
-                        <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true">
+                        <Column id="workcenterText_col" hAlign="Center" minScreenWidth="Tablet" demandPopin="true" headerMenu="menu">
                             <Text text="작업장명" wrapping="false" tooltip="작업장명"/>
                         </Column>
                     </columns>
                     <items>
                         <ColumnListItem vAlign="Middle" type="Inactive"> <!-- 테이블 네비게이션바 비활성화 -->
                             <cells>
-                                <Text text="{dataModel>Plant}" wrapping="false"/>
+                                <Text id="plant" text="{dataModel>Plant}" wrapping="false"/>
                                 <Input
                                     id="operationid"
                                     type="Text"
@@ -189,7 +224,7 @@
                                     </suggestionItems>
                                 </Input>
 
-                                <Text text="{dataModel>OperationidText}" wrapping="false"/> 
+                                <Text id="operationidtext" text="{dataModel>OperationidText}" wrapping="false"/> 
                                 <Input
                                     id="workcenter"
                                     type="Text"
@@ -209,7 +244,7 @@
                                     </suggestionItems>
                                 </Input>
                                    
-                                <Text text="{dataModel>WorkcenterText}" wrapping="false"/>
+                                <Text id="workcentertext" text="{dataModel>WorkcenterText}" wrapping="false"/>
                             </cells>
                         </ColumnListItem>
                     </items>
