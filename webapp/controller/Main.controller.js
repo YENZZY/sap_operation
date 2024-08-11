@@ -50,7 +50,7 @@ sap.ui.define([
            
             this.oFilterBar = this.byId("filterbar");
 
-            // 기본값 설정
+            // 기본값 설정(FILTER)
                 this.setDefaultValues();
 
             // 이벤트 핸들러 연결
@@ -109,6 +109,7 @@ sap.ui.define([
             this._registerForP13n(); // 테이블을 개인화 엔진에 등록하는 것
         },
 
+        // filter standard 기본 값
         setDefaultValues: function () {
             this._getDefaultTokens().then(function (aDefaultTokens) {
                 var oMultiInput = this.byId("VHPlant");
@@ -184,7 +185,6 @@ sap.ui.define([
                     this.MultiInputs("VHWC"); // 필터_작업장
                     this.MultiInputs("VHOpCode"); // 필터_공정코드
                     this.MultiInputs("VHPlant", true); //필터_플랜트
-            
                     }.bind(this)
                 ).fail(function() {
                     MessageBox.information("테이블 데이터를 읽어올 수 없습니다.");
@@ -440,247 +440,228 @@ sap.ui.define([
             });
         },
 
-        // 공정 코드 value help (테이블)
-        opiValueHelp: function (oEvent) {
-            var sInputId = oEvent.getSource().getId();
+        // 테이블 Value Help 열기
+        onTableVh: function(oEvent) {
+            var oInput = oEvent.getSource(); // 현재 입력 필드
             var oView = this.getView();
-            var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
-            this.inputRow = rowId;
-        
-            if (sInputId.includes("operationid")) {
+
+            this.oCell = oInput; // 현재 셀
+            this.oRow = this.oCell.getParent(); // 현재 행
+            this.oTable = this.oRow.getParent(); // 현재 테이블
+
+            // 공정 코드 입력 필드인 경우 Value Help 열기
+            if (oInput.getId().includes("operationid")) {
                 Fragment.load({
-                    id: oView.getId() + this.inputRow, // 고유 아이디 생성
+                    id: oView.getId() + "_" + jQuery.now(),
                     name: "operation.view.Fragments.OperationId",
                     controller: this
-                }).then(function (oValueHelpDialog) {
+                }).then(function(oValueHelpDialog) {
                     oView.addDependent(oValueHelpDialog);
                     oValueHelpDialog.open();
-                }).catch(function (oError) {
+                    // 다이얼로그 인스턴스를 저장
+                    this._currentDialog = {
+                        dialog: oValueHelpDialog,
+                        modelName: "opiModel",
+                        valueProperty: "OperationStandardTextCode",
+                        textProperty: "OperationStandardTextCodeName",
+                        tableText: "operationidtext"
+                    };
+                }.bind(this)).catch(function(oError) {
                     console.error("공정 코드 Value Help를 여는데 실패하였습니다.", oError);
                 });
-            }
-        },
-        // 공정코드 Input에 입력했을 때 자동으로 공정코드명 바뀜 
-        onOpiLiveChange: function (oEvent) {
-            var oInput = oEvent.getSource();
-            var sOperationId = oInput.getValue(); 
-            var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
-            this.inputRow = rowId;
-            var oModel = this.getModel("opiModel");
-            var aData = oModel.getData();
-            var oDataModel = this.getModel("dataModel");
-            var items = oDataModel.getData().items;
-
-            if (sOperationId === "") { // 빈 문자열일 경우 초기화
-                items[this.inputRow].Operationid = "";
-                items[this.inputRow].OperationidText = "";
-                oInput.setValueState(ValueState.None);
-                oInput.setValueStateText("");
-
-            } else {
-
-                var oMatch = aData.find(function (item) {
-                    return item.OperationStandardTextCode === sOperationId;
-                });
-
-                if (oMatch) {
-                    var sText = oMatch.OperationStandardTextCodeName;
-                    items[this.inputRow].Operationid = sOperationId;
-                    items[this.inputRow].OperationidText = sText;
-                    oInput.setValueState(ValueState.None);
-                    oInput.setValueStateText("");
-
-                } else {
-                    items[this.inputRow].OperationidText = "";
-                    oInput.setValueState(ValueState.Error);
-                    oInput.setValueStateText("유효하지 않은 공정 코드입니다.");
-                }
-            }
-            oDataModel.updateBindings();
-        },
-
-        // suggestion에서 공정코드 선택했을 시 공정코드명 자동 변환
-        opitableSelected: function (oEvent) {
-            var oInput = oEvent.getSource();
-            console.log("o1",oInput);
-            var oSelectedItem = oEvent.getParameter("selectedItem");
-            var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
-            this.inputRow = rowId;
-            var oModel = this.getModel("opiModel");
-            var aData = oModel.getData();
-
-            if (oSelectedItem) {
-                var sOperationId = oSelectedItem.getKey(); // 공정 코드
-
-                var oMatch = aData.find(function (item) {
-                    return item.OperationStandardTextCode === sOperationId;
-                });
-               
-                if (oMatch) {
-                    var sText = oMatch.OperationStandardTextCodeName;
-                    var oDataModel = this.getModel("dataModel");
-                    var items = oDataModel.getData().items;
-                    items[this.inputRow].Operationid = sOperationId;
-                    items[this.inputRow].OperationidText = sText;
-                    
-                    oDataModel.updateBindings();
-            
-                    oInput.setValueState(ValueState.None);
-                    oInput.setValueStateText("");
-                } else {
-                    oInput.setValueState(ValueState.Error);
-                    oInput.setValueStateText("유효하지 않은 공정 코드입니다.");
-                }
-            } else {
-                // 선택된 항목이 없는 경우 입력 필드를 초기화
-                oInput.setValueState(ValueState.None);
-                oInput.setValueStateText("");
-            }
-        },
-
-        opiVhSearch : function (oEvent) {
-            var sValue = oEvent.getParameter("value");
-            var oFilter = new Filter(
-                "OperationStandardTextCode",
-                FilterOperator.Contains, sValue
-            );
-            oEvent.getSource().getBinding("items").filter([oFilter]);
-        },
-
-        opiVhClose: function (oEvent) {
-            var oSelectedItem = oEvent.getParameter("selectedItem");
-            if (oSelectedItem) {
-                var sPath = oSelectedItem.getBindingContext("opiModel").getPath();
-                var oSelectedData = this.getModel("opiModel").getProperty(sPath);
-                var items = this.getModel("dataModel").getData().items;
-                items[this.inputRow].Operationid = oSelectedData.OperationStandardTextCode;
-    
-                items[this.inputRow].OperationidText = oSelectedData.OperationStandardTextCodeName;
-                this.getModel("dataModel").updateBindings();
-            }
-            oEvent.getSource().getBinding("items").filter([]);
-        },
-
-        // 작업장 value help(테이블)
-        wcValueHelp: function (oEvent) {
-            var sInputId = oEvent.getSource().getId();
-            var oView = this.getView();
-            var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
-            this.inputRow = rowId;
-        
-            if (sInputId.includes("workcenter")) {
+            }else if(oInput.getId().includes("workcenter")) {
+                // 작업장 다이얼로그 열기
                 Fragment.load({
-                id: oView.getId() + this.inputRow,
-                name: "operation.view.Fragments.WorkCenter",
-                controller: this
-                }).then(function(oValueHelpDialog){
-                oView.addDependent(oValueHelpDialog);
-                oValueHelpDialog.open();
-                }).catch(function (oError) {
+                    id: oView.getId() + "_" + jQuery.now(),
+                    name: "operation.view.Fragments.WorkCenter",
+                    controller: this
+                }).then(function(oValueHelpDialog) {
+                    oView.addDependent(oValueHelpDialog);
+                    oValueHelpDialog.open();
+                    // 다이얼로그 인스턴스를 저장
+                    this._currentDialog = {
+                        dialog: oValueHelpDialog,
+                        modelName: "wcModel",
+                        valueProperty: "WorkCenter",
+                        textProperty: "WorkCenterText",
+                        tableText: "workcentertext"
+                    };
+                }.bind(this)).catch(function(oError) {
                     console.error("작업장 Value Help를 여는데 실패하였습니다.", oError);
                 });
             }
         },
+        
+        // 테이블 Value Help 닫기
+        onTableVhClose: function (oEvent) {
+            var oSelectedItem = oEvent.getParameter("selectedItem");
+            if (oSelectedItem) {
+                var sModelName = this._currentDialog.modelName;
+                var sValueProperty = this._currentDialog.valueProperty;
+                var sTextProperty = this._currentDialog.textProperty;
+                var stableText = this._currentDialog.tableText;
+                var sPath = oSelectedItem.getBindingContext(sModelName).getPath();
+                var oSelectedData = this.getModel(sModelName).getProperty(sPath);
+                var sValue = oSelectedData[sValueProperty];
+                var sText = oSelectedData[sTextProperty];
 
-        // 작업장 Input에 입력했을 때 자동으로 작업장명 바뀜
-        onWcLiveChange: function (oEvent) {
-            var oInput = oEvent.getSource();
-            var sWorkcenter = oInput.getValue(); 
-            var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
-            this.inputRow = rowId;
-            var oModel = this.getModel("wcModel");
+                if (this.oCell && this.oRow) {
+                    var cellIndex = this.oRow.indexOfCell(this.oCell);
+                    var oTableCell = this.oRow.getCells()[cellIndex];
+                    var oTextCell = this.oRow.getCells().find(function (item) {
+                        return item instanceof Text && item.getId().includes(stableText);
+                    });
+
+                    if (oTableCell instanceof Input) {
+                        oTableCell.setValue(sValue);
+                        if (oTextCell) {
+                            oTextCell.setText(sText);
+                        }
+                    }
+                }
+
+                // 데이터 모델 업데이트
+                this.getModel("dataModel").updateBindings(true);
+            }
+
+            // 필터 초기화
+            oEvent.getSource().getBinding("items").filter([]);
+
+            // 저장된 셀과 행 초기화
+            this.oRow = null;
+            this.oCell = null;
+
+            this._currentDialog = null; // 다이얼로그 정보 초기화
+        },
+
+        // 테이블 Value Help 입력 시 자동으로 값 업데이트
+        onTableVhLiveChange: function (oEvent) {
+            var oInput = oEvent.getSource(); // 현재 입력 필드
+            var sValue = oInput.getValue(); // 입력된 값
+            var oInputId = oInput.getId();
+           
+            if(oInputId.includes("operationid")){
+                var sModelName = "opiModel"
+                var sValueProperty = "OperationStandardTextCode"
+                var sTextProperty = "OperationStandardTextCodeName"
+                var sTableText = "operationidtext"
+          
+            } else if (oInputId.includes("workcenter")){
+                var sModelName = "wcModel"
+                var sValueProperty = "WorkCenter"
+                var sTextProperty = "WorkCenterText"
+                var sTableText = "workcentertext"
+            }
+
+            var oModel = this.getModel(sModelName);
             var aData = oModel.getData();
             var oDataModel = this.getModel("dataModel");
-            var items = oDataModel.getData().items;
+            var oTableRow = oInput.getParent(); // 현재 행
+            var cellIndex = oTableRow.indexOfCell(oInput); // 입력 필드의 셀 인덱스
+            var oTableCell = oTableRow.getCells()[cellIndex];
+            var oTextCell = oTableRow.getCells().find(function (item) {
+                return item instanceof Text && item.getId().includes(sTableText); // 텍스트 셀 찾기
+            });
 
-            if (sWorkcenter === "") { // 빈 문자열일 경우 초기화
-                items[this.inputRow].Workcenter = "";
-                items[this.inputRow].WorkcenterText = "";
-                oInput.setValueState(ValueState.None);
-                oInput.setValueStateText("");
-                
+            if (sValue === "") { // 빈 문자열인 경우
+                oTableCell.setValue(""); // 값 초기화
+                if (oTextCell) {
+                    oTextCell.setText(""); // 텍스트 초기화
+                }
+                oInput.setValueState(ValueState.None); // 상태 초기화
+                oInput.setValueStateText(""); // 상태 텍스트 초기화
+            
             } else {
+                // 입력된 값과 일치하는 항목 찾기
                 var oMatch = aData.find(function (item) {
-                    return item.WorkCenter === sWorkcenter;
+                    return item[sValueProperty] === sValue;
                 });
 
                 if (oMatch) {
-                    var sText = oMatch.WorkCenterText;
-                    items[this.inputRow].Workcenter = sWorkcenter;
-                    items[this.inputRow].WorkcenterText = sText;
-                    oInput.setValueState(ValueState.None);
-                    oInput.setValueStateText("");
+                    var sText = oMatch[sTextProperty]; // 텍스트
+                    oTableCell.setValue(sValue); // 값 업데이트
+                    if (oTextCell) {
+                        oTextCell.setText(sText); // 텍스트 업데이트
+                    }
+                    oInput.setValueState(ValueState.None); // 상태 초기화
+                    oInput.setValueStateText(""); // 상태 텍스트 초기화
 
                 } else {
-                    items[this.inputRow].WorkcenterText = ""; // 유효하지 않은 경우 텍스트 초기화
-                    oInput.setValueState(ValueState.Error);
-                    oInput.setValueStateText("유효하지 않은 작업장입니다.");
+                    if (oTextCell) {
+                        oTextCell.setText(""); // 텍스트 초기화
+                    }
+                    oInput.setValueState(ValueState.Error); // 상태 오류
+                    oInput.setValueStateText("유효하지 않은 값입니다."); // 오류 메시지
                 }
             }
-            oDataModel.updateBindings(); // 데이터 모델 업데이트
+            
+            // 데이터 모델 업데이트
+            oDataModel.updateBindings(); // UI와 데이터 모델 동기화
         },
-                
-        // 작업장 Input에서 suggestion 선택했을 시 작업장명 자동 변환
-        wctableSelected: function (oEvent) {
-            var oInput = oEvent.getSource();
+
+        // suggestion에서 값 선택 시 자동 변환
+        onTableVhSelected: function (oEvent) {
+            var oInput = oEvent.getSource(); // 현재 입력 필드
+            var oInputId = oInput.getId();
             var oSelectedItem = oEvent.getParameter("selectedItem");
-            var rowId = oEvent.getSource().getParent().getBindingContext("dataModel").getPath().split("/").pop();
-            this.inputRow = rowId;
-            var oModel = this.getModel("wcModel");
+
+            if(oInputId.includes("operationid")){
+                var sModelName = "opiModel"
+                var sValueProperty = "OperationStandardTextCode"
+                var sTextProperty = "OperationStandardTextCodeName"
+                var sTableText = "operationidtext"
+          
+            } else if (oInputId.includes("workcenter")){
+                var sModelName = "wcModel"
+                var sValueProperty = "WorkCenter"
+                var sTextProperty = "WorkCenterText"
+                var sTableText = "workcentertext"
+            }
+            var oModel = this.getModel(sModelName);
             var aData = oModel.getData();
             var oDataModel = this.getModel("dataModel");
-            var items = oDataModel.getData().items;
+            
+            var oTableRow = oInput.getParent(); // 현재 행
+            var cellIndex = oTableRow.indexOfCell(oInput); // 입력 필드의 셀 인덱스
+            var oTableCell = oTableRow.getCells()[cellIndex];
+            var oTextCell = oTableRow.getCells().find(function (item) {
+                return item instanceof Text && item.getId().includes(sTableText); // 텍스트 셀 찾기
+            });
 
             if (oSelectedItem) {
-                var sWorkcenter = oSelectedItem.getKey(); // 작업장
+                var sValue = oSelectedItem.getKey(); // 선택된 값
+
                 var oMatch = aData.find(function (item) {
-                    return item.WorkCenter === sWorkcenter;
+                    return item[sValueProperty] === sValue;
                 });
 
                 if (oMatch) {
-                    var sText = oMatch.WorkCenterText;
-                    items[this.inputRow].Workcenter = sWorkcenter;
-                    items[this.inputRow].WorkcenterText = sText;
-                    oInput.setValueState(ValueState.None);
-                    oInput.setValueStateText("");
+                    var sText = oMatch[sTextProperty]; // 텍스트
+                    oTableCell.setValue(sValue); // 값 업데이트
+                    if (oTextCell) {
+                        oTextCell.setText(sText); // 텍스트 설정
+                    }
+                    oDataModel.updateBindings(); // 데이터 모델 업데이트
+                    oInput.setValueState(ValueState.None); // 상태 초기화
+                    oInput.setValueStateText(""); // 상태 텍스트 초기화
+
                 } else {
-                    items[this.inputRow].WorkcenterText = ""; // 유효하지 않은 경우 텍스트 초기화
-                    oInput.setValueState(ValueState.Error);
-                    oInput.setValueStateText("유효하지 않은 작업장입니다.");
+                    oInput.setValueState(ValueState.Error); // 상태 오류
+                    oInput.setValueStateText("유효하지 않은 값입니다."); // 오류 메시지
                 }
             } else {
                 // 선택된 항목이 없는 경우 입력 필드를 초기화
-                items[this.inputRow].Workcenter = "";
-                items[this.inputRow].WorkcenterText = "";
-                oInput.setValueState(ValueState.None);
-                oInput.setValueStateText("");
+                oInput.setValueState(ValueState.None); // 상태 초기화
+                oInput.setValueStateText(""); // 상태 텍스트 초기화
             }
-            
-            oDataModel.updateBindings();
         },
 
-        wcVhSearch : function (oEvent) {
-                var sValue = oEvent.getParameter("value");
-                var oFilter = new Filter(
-                "WorkCenter",
-                FilterOperator.Contains, sValue
-                );
-                oEvent.getSource().getBinding("items").filter([oFilter]);
-            },
-
-        wcVhClose: function (oEvent) {
-            var oSelectedItem = oEvent.getParameter("selectedItem");
-            if (oSelectedItem) {
-                var sPath = oSelectedItem.getBindingContext("wcModel").getPath();
-                var oSelectedData = this.getModel("wcModel").getProperty(sPath);
-                var items = this.getModel("dataModel").getData().items;
-                items[this.inputRow].Workcenter = oSelectedData.WorkCenter;
-        
-                items[this.inputRow].WorkcenterText = oSelectedData.WorkCenterText;
-
-                this.getModel("dataModel").updateBindings();
-            }
-            oEvent.getSource().getBinding("items").filter([]);
+        // 테이블 Value Help 검색
+        onTableVhSearch: function (oEvent) {
+            var sValueProperty = this._currentDialog.valueProperty;
+            var sValue = oEvent.getParameter("value");
+            var oFilter = new Filter(sValueProperty, FilterOperator.Contains, sValue);
+            oEvent.getSource().getBinding("items").filter([oFilter]); // 검색 필터 적용
         },
 
         // 플랜트 필터 valuehelp
@@ -1687,17 +1668,90 @@ sap.ui.define([
                     }),
                 }
             });
-
             Engine.getInstance().attachStateChange(this.handleStateChange.bind(this));
+            
         },
-
-     
 
         _getKey: function(oControl) {
             return this.getView().getLocalId(oControl.getId());
         },
 
         // handleStateChange 함수는 개인화 상태가 변경될 때 호출, 변경된 상태를 반영하여 테이블을 업데이트
+        // handleStateChange: function(oEvt) {
+        //     const oTable = this.byId("dataTable");
+        //     const oState = oEvt.getParameter("state");
+        
+        //     if (!oState) {
+        //         return;
+        //     }
+        
+        //     // Update columns based on state
+        //     this.updateColumns(oState);
+        
+        //     // Create filters and sorters
+        //     const aGroups = this.createGroups(oState);
+        //     const aSorter = this.createSorters(oState, aGroups);
+        
+        //     // Create new cell templates
+        //     const aCells = oState.Columns.map(function(oColumnState) {
+        //         const sPath = this.oMetadataHelper.getProperty(oColumnState.key).path;
+        
+        //         if (oColumnState.key === "operationid_col") {
+        //             return new Input({
+        //                 id: "operationid" + jQuery.now(), // ID 재생성
+        //                 value: "{" + sPath + "}",
+        //                 type: InputType.Text, 
+        //                 showValueHelp: true,
+        //                 valueHelpRequest: this.onTableVh.bind(this),
+        //                 suggestionItemSelected: this.onTableVhSelected.bind(this),
+        //                 showSuggestion: true,
+        //                 suggestionItems: {
+        //                     path: 'opiModel>/',
+        //                     templateShareable: false,
+        //                     template: new SuggestionItem({
+        //                         text: "{opiModel>OperationStandardTextCode}",
+        //                         key: "{opiModel>OperationStandardTextCode}"
+        //                     })
+        //                 },
+        //                 liveChange: this.onTableVhLiveChange.bind(this)
+        //             });
+        //         } else if (oColumnState.key === "workcenter_col") {
+        //             return new Input({
+        //                 id: "workcenter" + jQuery.now(), // ID 재생성
+        //                 value: "{" + sPath + "}",
+        //                 type: InputType.Text,
+        //                 showValueHelp: true,
+        //                 valueHelpRequest: this.onTableVh.bind(this),
+        //                 suggestionItemSelected: this.onTableVhSelected.bind(this),
+        //                 showSuggestion: true,
+        //                 suggestionItems: {
+        //                     path: 'wcModel>/',
+        //                     templateShareable: false,
+        //                     template: new SuggestionItem({
+        //                         text: "{wcModel>WorkCenter}",
+        //                         key: "{wcModel>WorkCenter}"
+        //                     })
+        //                 },
+        //                 liveChange: this.onTableVhLiveChange.bind(this)
+        //             });
+        //         } else {
+        //             return new Text({
+        //                 text: "{" + sPath + "}"
+        //             });
+        //         }
+        //     }.bind(this));
+        
+        //     // Re-bind table items with updated template
+        //     oTable.bindItems({
+        //         templateShareable: false,
+        //         path: 'dataModel>/items',
+        //         sorter: aSorter.concat(aGroups),
+        //         template: new ColumnListItem({
+        //             cells: aCells
+        //         })
+        //     });
+        // },     
+        
         handleStateChange: function(oEvt) {
             const oTable = this.byId("dataTable");
             const oState = oEvt.getParameter("state");
@@ -1706,70 +1760,60 @@ sap.ui.define([
                 return;
             }
         
-            // Update columns based on state
-            this.updateColumns(oState);
+            // 현재 열과 데이터 상태 저장
+            const aColumns = oTable.getColumns();
+            const aColumnData = {}; // 열 데이터를 저장할 객체
         
-            // Create filters and sorters
-            const aGroups = this.createGroups(oState);
-            const aSorter = this.createSorters(oState, aGroups);
+            // 1. 열 데이터 저장
+            oTable.getItems().forEach(oItem => {
+                const aCells = oItem.getCells();
+                aColumns.forEach((oColumn, index) => {
+                    const sColumnId = oColumn.getId();
+                    console.log("scolumid",sColumnId);
+                    const oCell = aCells[index];
+                    console.log("ocell",oCell);
+                    const sPath = oCell.getBindingPath();
+                    console.log("spath",sPath);
+
+                    const sValue = oItem.getBindingContext().getProperty(sPath);
+                    console.log("svalue",sValue);
+                    if (!aColumnData[sColumnId]) {
+                        aColumnData[sColumnId] = [];
+                    }
+                    aColumnData[sColumnId].push(sValue);
+                });
+            });
         
-            // Create new cell templates
-            const aCells = oState.Columns.map(function(oColumnState) {
-                const sPath = this.oMetadataHelper.getProperty(oColumnState.key).path;
+            // 2. 기존 열 순서 제거
+            aColumns.forEach(oColumn => oTable.removeColumn(oColumn));
         
-                if (oColumnState.key === "operationid_col") {
-                    return new Input({
-                        id: "operationid_" + jQuery.now(), // ID 재생성
-                        value: "{" + sPath + "}",
-                        type: InputType.Text, 
-                        showValueHelp: true,
-                        valueHelpRequest: this.opiValueHelp.bind(this),
-                        suggestionItemSelected: this.opitableSelected.bind(this),
-                        showSuggestion: true,
-                        suggestionItems: {
-                            path: 'opiModel>/',
-                            templateShareable: false,
-                            template: new SuggestionItem({
-                                text: "{opiModel>OperationStandardTextCode}",
-                                key: "{opiModel>OperationStandardTextCode}"
-                            })
-                        },
-                        liveChange: this.onOpiLiveChange.bind(this)
-                    });
-                } else if (oColumnState.key === "workcenter_col") {
-                    return new Input({
-                        id: "workcenter_" + jQuery.now(), // ID 재생성
-                        value: "{" + sPath + "}",
-                        type: InputType.Text,
-                        showValueHelp: true,
-                        valueHelpRequest: this.wcValueHelp.bind(this),
-                        suggestionItemSelected: this.wctableSelected.bind(this),
-                        showSuggestion: true,
-                        suggestionItems: {
-                            path: 'wcModel>/',
-                            templateShareable: false,
-                            template: new SuggestionItem({
-                                text: "{wcModel>WorkCenter}",
-                                key: "{wcModel>WorkCenter}"
-                            })
-                        },
-                        liveChange: this.onWcLiveChange.bind(this)
-                    });
-                } else {
-                    return new Text({
-                        text: "{" + sPath + "}"
+            // 3. 새 열 순서 생성
+            const aSortedColumns = oState.Columns.map(oColumnState => {
+                return aColumns.find(oColumn => oColumn.getId() === oColumnState.key);
+            }).filter(oColumn => oColumn);
+        
+            // 4. 새 열 순서로 열 추가 및 데이터 재배치
+            aSortedColumns.forEach((oColumn, index) => {
+                oTable.addColumn(oColumn);
+        
+                // 해당 열의 데이터를 재배치
+                const sColumnId = oColumn.getId();
+                if (aColumnData[sColumnId]) {
+                    oTable.getItems().forEach((oItem, rowIndex) => {
+                        const oCell = oItem.getCells()[index];
+                        if (oCell && oCell.setValue) {
+                            oCell.setValue(aColumnData[sColumnId][rowIndex]);
+                        }
                     });
                 }
-            }.bind(this));
+            });
         
-            // Re-bind table items with updated template
+            // 테이블 항목 바인딩 업데이트
             oTable.bindItems({
                 templateShareable: false,
                 path: 'dataModel>/items',
-                sorter: aSorter.concat(aGroups),
-                template: new ColumnListItem({
-                    cells: aCells
-                })
+                sorter: this.createSorters(oState),
+                template: oTable.getBindingInfo("items").template // 기존 템플릿 재사용
             });
         },        
 

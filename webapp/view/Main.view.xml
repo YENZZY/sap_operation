@@ -138,14 +138,14 @@
                 </f:DynamicPageHeader>
             </f:header>
             <f:content>
-                <Table id="dataTable" inset="false" width="100%" mode="MultiSelect" items="{path: 'dataModel>/items', sorter: [{path: 'Operationid', descending: false}, {path: 'Workcenter', descending: false}]}" ariaLabelledBy="title" fixedLayout="Strict"
+                <Table id="dataTable" inset="false" width="100%" mode="MultiSelect" items="{path: 'dataModel>/items'}" ariaLabelledBy="title" fixedLayout="Strict"
 		                autoPopinMode="true" growing="true" sticky="ColumnHeaders,HeaderToolbar" popinLayout="GridSmall">
                     <headerToolbar>
                         <OverflowToolbar>
                             <content>
                                 <Title id="title" text="작업 지시"/>
                                 <ToolbarSeparator/>
-                                <vm:VariantManagement id="tableSVM" for="dataTable"/>
+                                <vm:VariantManagement id="standardVM" for="dataTable"/>
                                 <ToolbarSpacer/>
                                 <Button id="add" text="+" press="onAdd"/>
                                 <Button id="delete" text="삭제" press="onDelete"/>
@@ -209,15 +209,15 @@
                                     id="operationid"
                                     type="Text"
                                     showValueHelp="true"
-                                    valueHelpRequest="opiValueHelp"
+                                    valueHelpRequest="onTableVh"
                                     value="{dataModel>Operationid}"
-                                    suggestionItemSelected="opitableSelected"
+                                    suggestionItemSelected="onTableVhSelected"
                                     showSuggestion="true"
                                     suggestionItems="{
                                         path: 'opiModel>/',
                                         templateShareable: false
                                     }"
-                                    liveChange="onOpiLiveChange"
+                                    liveChange="onTableVhLiveChange"
                                 >
                                     <suggestionItems>
                                         <SuggestionItem text="{opiModel>OperationStandardTextCode}" key="{opiModel>OperationStandardTextCode}" />
@@ -229,15 +229,15 @@
                                     id="workcenter"
                                     type="Text"
                                     showValueHelp="true"
-                                    valueHelpRequest="wcValueHelp"
+                                    valueHelpRequest="onTableVh"
                                     value="{dataModel>Workcenter}"
-                                    suggestionItemSelected="wctableSelected"
+                                    suggestionItemSelected="onTableVhSelected"
                                     showSuggestion="true"
                                     suggestionItems="{
                                         path: 'wcModel>/',
                                         templateShareable: false
                                     }"
-                                    liveChange="onWcLiveChange"
+                                    liveChange="onTableVhLiveChange"
                                 >
                                     <suggestionItems>
                                         <SuggestionItem text="{wcModel>WorkCenter}" key="{wcModel>WorkCenter}" />
