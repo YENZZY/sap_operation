@@ -6,16 +6,16 @@
 >
     <ValueHelpDialog
         title="공정코드"
-        ok="onOpiOk"
-        cancel="onOpiCancel"
-        afterClose="onOpiClose"
+        ok="onFilterVhOk"
+        cancel="onFilterVhCancel"
+        afterClose="onFilterVhClose"
         supportRanges="true"
         key="OperationStandardTextCode"
         >
         <filterBar>
             <fb:FilterBar
                 advancedMode="true"
-                search="onOpiSearch"
+                search="onFilterVhSearch"
                 isRunningInValueHelpDialog="true"
             >
                 <fb:filterGroupItems>

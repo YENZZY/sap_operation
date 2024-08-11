@@ -6,15 +6,15 @@
 >
     <ValueHelpDialog
         title="작업장"
-        ok="onWcOk"
-        cancel="onWcCancel"
-        afterClose="onWcClose"
+        ok="onFilterVhOk"
+        cancel="onFilterVhCancel"
+        afterClose="onFilterVhClose"
         supportRanges="true"
         key="WorkCenter">
         <filterBar>
             <fb:FilterBar
                 advancedMode="true"
-                search="onWcSearch"
+                search="onFilterVhSearch"
                 isRunningInValueHelpDialog="true">
                 <fb:filterGroupItems>
                 <fb:FilterGroupItem

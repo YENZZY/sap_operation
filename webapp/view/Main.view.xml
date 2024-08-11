@@ -42,8 +42,8 @@
                                         <MultiInput
                                             width="15rem"
                                             id="VHPlant"
-                                            valueHelpRequest="onPlantValueHelp"
-                                            suggestionItemSelected="onPlantSelected"
+                                            valueHelpRequest="onFilterVh"
+                                            suggestionItemSelected="onFilterVhSelected"
                                             suggestionRows="{
                                             path: 'plantModel>/',
                                             length: 10}"
@@ -67,8 +67,8 @@
                                         <MultiInput 
                                             width="15rem" 
                                             id="VHOpCode" 
-                                            valueHelpRequest="onOpiValueHelp"
-                                            suggestionItemSelected="onOpiSelected"
+                                            valueHelpRequest="onFilterVh"
+                                            suggestionItemSelected="onFilterVhSelected"
                                             suggestionRows="{
                                             path: 'opiModel>/',
                                             length: 10}"
@@ -96,8 +96,8 @@
                                         <MultiInput 
                                             width="15rem"
                                             id="VHWC"
-                                            valueHelpRequest="onWcValueHelps"
-                                            suggestionItemSelected="onWcSelected"
+                                            valueHelpRequest="onFilterVh"
+                                            suggestionItemSelected="onFilterVhSelected"
                                             suggestionRows="{
                                             path: 'wcModel>/',
                                             length: 10}"

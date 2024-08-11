@@ -4,6 +4,7 @@ sap.ui.define([
     'sap/m/MessageBox',
     'sap/m/MessageToast',
     'sap/ui/comp/valuehelpdialog/ValueHelpDialog',
+    "sap/ui/core/CustomData",
     'sap/ui/core/library',
     'sap/m/SearchField',
     'sap/m/MultiInput',
@@ -35,7 +36,7 @@ sap.ui.define([
     'operation/js/jszip'
 ], function (Controller,
      JSONModel,
-     MessageBox, MessageToast, ValueHelpDialog, coreLibrary, SearchField, MultiInput, TypeString, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Input, library, SuggestionItem, Spreadsheet, Fragment, ValueState, PersonalizableInfo, Engine, SelectionController, SortController, GroupController, MetadataHelper, Sorter, ColumnWidthController) {
+     MessageBox, MessageToast, ValueHelpDialog, CustomData, coreLibrary, SearchField, MultiInput, TypeString, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Input, library, SuggestionItem, Spreadsheet, Fragment, ValueState, PersonalizableInfo, Engine, SelectionController, SortController, GroupController, MetadataHelper, Sorter, ColumnWidthController) {
     "use strict";
 
     var EdmType = exportLibrary.EdmType;
@@ -68,46 +69,26 @@ sap.ui.define([
             this.oFilterBar.registerApplyData(this.applyData.bind(this));
             this.oFilterBar.registerGetFiltersWithValues(this.getFiltersWithValues.bind(this));
 
-            // value help 공정코드
-            var oMultiInputWithSuggestions;
-
-            // suggestions filter 공정코드 value help
-			oMultiInputWithSuggestions = this.byId("VHOpCode"); // 공정코드
-			oMultiInputWithSuggestions.addValidator(this._onMultiInputValidate);
-			oMultiInputWithSuggestions.setTokens(this._getDefaultTokens());
-			this._oMultiInputWithSuggestions = oMultiInputWithSuggestions;
-
-            var oMultiInput = this.byId("VHOpCode");
-            // 포커스 아웃 이벤트 핸들러 등록
-            oMultiInput.attachBrowserEvent("focusout", this.onOpiFocusOut.bind(this));
-
-            // 플랜트 value help
-            var oPlantSuggestion;
-
-			oPlantSuggestion = this.byId("VHPlant"); // 공정코드
-			oPlantSuggestion.addValidator(this._onMultiInputValidate);
-			oPlantSuggestion.setTokens(this._getDefaultTokens());
-			this._oPlantSuggestion = oPlantSuggestion;
-
-            var oPlantInput = this.byId("VHPlant");
-            // 포커스 아웃 이벤트 핸들러 등록
-            oPlantInput.attachBrowserEvent("focusout", this.onPlantFocusOut.bind(this));
-
-            // 작업장 value help
-            var oWCSuggestion;
-
-			oWCSuggestion = this.byId("VHWC"); // 공정코드
-			oWCSuggestion.addValidator(this._onMultiInputValidate);
-			oWCSuggestion.setTokens(this._getDefaultTokens());
-			this._oWCSuggestion = oWCSuggestion;
-
-            var oWcInput = this.byId("VHWC");
-            // 포커스 아웃 이벤트 핸들러 등록
-            oWcInput.attachBrowserEvent("focusout", this.onWcFocusOut.bind(this));
+            // value help 
+            this.initializeValueHelpInputs();
             
             // table standard (start)
             this._registerForP13n(); // 테이블을 개인화 엔진에 등록하는 것
         },
+
+       // MultiInput 초기화 및 설정
+       initializeValueHelpInputs: function() {
+        var aMultiInputs = ["VHOpCode", "VHPlant", "VHWC"];
+    
+        aMultiInputs.forEach(function(sId) {
+            var oMultiInput = this.byId(sId);
+            if (oMultiInput) {
+                oMultiInput.addValidator(this._onMultiInputValidate);
+                oMultiInput.setTokens(this._getDefaultTokens());
+                oMultiInput.attachBrowserEvent("focusout", this.onFilterVhFocusOut.bind(this));
+                }
+            }.bind(this));
+        },    
 
         // filter standard 기본 값
         setDefaultValues: function () {
@@ -637,72 +618,162 @@ sap.ui.define([
             var oFilter = new Filter(sValueProperty, FilterOperator.Contains, sValue);
             oEvent.getSource().getBinding("items").filter([oFilter]); // 검색 필터 적용
         },
+        // 테이블 vh 끝
 
-        // 플랜트 필터 valuehelp
-        onPlantValueHelp: function () {
-            // 초기화된 MultiInput 객체
-            this._oPlantSuggestion = new MultiInput();
+        // 필터 valuehelp
+        onFilterVh: function (oEvent) {
+            // ValueHelpDialog의 ID에 따라 변수를 설정
+            var sValueHelpId = oEvent.getSource().getId();
+            var filterName, label, keys, modelName, columnLabels, inputId, filterPaths;
+        
+            console.log("svi", sValueHelpId);
+        
+            // ID에 따라 조건을 설정
+            if (sValueHelpId.includes("VHPlant")) {
+                filterName = "PlantFilter";
+                label = "플랜트";
+                keys = ["Plant"];
+                modelName = "plantModel";
+                columnLabels = ["플랜트"];
+                inputId = "VHPlant";
+                filterPaths = ["Plant"];
+        
+            } else if (sValueHelpId.includes("VHOpCode")) {
+                filterName = "OperationIdFilter";
+                label = "공정코드";
+                keys = ["OperationStandardTextCode", "OperationStandardTextCodeName"];
+                modelName = "opiModel";
+                columnLabels = ["공정코드", "공정코드명"];
+                inputId = "VHOpCode";
+                filterPaths = ["OperationStandardTextCode", "OperationStandardTextCodeName"];
 
-            this._oBasicSearchFieldWithSuggestions = new SearchField();
+            } else if (sValueHelpId.includes("VHWC")) {
+                filterName = "WorkCenterFilter";
+                label = "작업장";
+                keys = ["WorkCenterCategoryCode", "Plant", "WorkCenter", "WorkCenterText", "Language"];
+                modelName = "wcModel";
+                columnLabels = ["범주", "플랜트", "작업장", "작업장명", "언어"];
+                inputId = "VHWC";
+                filterPaths = ["WorkCenterCategoryCode", "Plant", "WorkCenter", "WorkCenterText", "Language"];
 
-            this.pDialogWithSuggestions = this.loadFragment({
-                name: "operation.view.Fragments.PlantFilter"
+            }
+        
+            this.oSuggestion = new MultiInput();
+            this.oSearchSuggestion = new SearchField();
+        
+            this.dialogSuggestion = this.loadFragment({
+                name: `operation.view.Fragments.${filterName}`
             }).then(function (oDialogSuggestions) {
-                var oFilterBar = oDialogSuggestions.getFilterBar(),
-                    oColumnPlant;
-                this._oVHDWithSuggestions = oDialogSuggestions;
-
+                var oFilterBar = oDialogSuggestions.getFilterBar();
+        
+                this.vhdSuggestions = oDialogSuggestions;
                 this.getView().addDependent(oDialogSuggestions);
 
                 // 필터링을 위한 Key 필드 설정
                 oDialogSuggestions.setRangeKeyFields([{
-                    label: "플랜트",
-                    key: "Plant",
+                    label: label,
+                    key: keys[0], // 기본 키 필드 설정
                     type: "string",
                     typeInstance: new TypeString({}, {
                         maxLength: 7
                     })
                 }]);
-
+        
                 // FilterBar의 기본 검색 설정
                 oFilterBar.setFilterBarExpanded(false);
-                oFilterBar.setBasicSearch(this._oBasicSearchFieldWithSuggestions);
-
-                // 기본 검색이 실행될 때 필터바 검색 트리거
-                this._oBasicSearchFieldWithSuggestions.attachSearch(function () {
+                oFilterBar.setBasicSearch(this.oSearchSuggestion);
+        
+                // 기본 검색이 실행될 때 FilterBar 검색 트리거
+                this.oSearchSuggestion.attachSearch(function () {
                     oFilterBar.search();
                 });
-
+        
                 oDialogSuggestions.getTableAsync().then(function (oTable) {
-                    oTable.setModel(this.getOwnerComponent().getModel("plantModel"));
-
+                    oTable.setModel(this.getOwnerComponent().getModel(modelName));
+        
                     // 데스크톱의 기본 테이블은 sap.ui.table.Table
                     if (oTable.bindRows) {
                         oTable.bindAggregation("rows", {
-                            path: "plantModel>/",
+                            path: `${modelName}>/`,
                             events: {
                                 dataReceived: function () {
                                     oDialogSuggestions.update();
                                 }
                             }
                         });
-                        oColumnPlant = new UIColumn({
-                            label: new Label({ text: "플랜트" }),
-                            template: new Text({ wrapping: false, text: "{plantModel>Plant}" })
-                        });
-                        oColumnPlant.data({ fieldName: "Plant" });
-                        oTable.addColumn(oColumnPlant);
-
+        
+                        if (filterName === "PlantFilter") {
+                            var oColumn = new UIColumn({
+                                label: new Label({ text: columnLabels[0] }),
+                                template: new Text({ wrapping: false, text: `{${modelName}>${keys[0]}}` })
+                            });
+                            oColumn.data({ fieldName: keys[0] });
+                            oTable.addColumn(oColumn);
+        
+                        } else if (filterName === "OperationIdFilter") {
+                            var oColumnOperationid = new UIColumn({
+                                label: new Label({ text: columnLabels[0] }),
+                                template: new Text({ wrapping: false, text: `{${modelName}>${keys[0]}}` })
+                            });
+                            oColumnOperationid.data({ fieldName: keys[0] });
+                            oTable.addColumn(oColumnOperationid);
+        
+                            var oColumnOperationidText = new UIColumn({
+                                label: new Label({ text: columnLabels[1] }),
+                                template: new Text({ wrapping: false, text: `{${modelName}>${keys[1]}}` })
+                            });
+                            oColumnOperationidText.data({ fieldName: keys[1] });
+                            oTable.addColumn(oColumnOperationidText);
+        
+                        } else if (filterName === "WorkCenterFilter") {
+                            var oColumnWorkCenterCategoryCode = new UIColumn({
+                                label: new Label({ text: columnLabels[0] }),
+                                template: new Text({ wrapping: false, text: `{${modelName}>${keys[0]}}` })
+                            });
+                            oColumnWorkCenterCategoryCode.data({ fieldName: keys[0] });
+                            oTable.addColumn(oColumnWorkCenterCategoryCode);
+        
+                            var oColumnPlant = new UIColumn({
+                                label: new Label({ text: columnLabels[1] }),
+                                template: new Text({ wrapping: false, text: `{${modelName}>${keys[1]}}` })
+                            });
+                            oColumnPlant.data({ fieldName: keys[1] });
+                            oTable.addColumn(oColumnPlant);
+        
+                            var oColumnWorkCenter = new UIColumn({
+                                label: new Label({ text: columnLabels[2] }),
+                                template: new Text({ wrapping: false, text: `{${modelName}>${keys[2]}}` })
+                            });
+                            oColumnWorkCenter.data({ fieldName: keys[2] });
+                            oTable.addColumn(oColumnWorkCenter);
+        
+                            var oColumnWorkCenterText = new UIColumn({
+                                label: new Label({ text: columnLabels[3] }),
+                                template: new Text({ wrapping: false, text: `{${modelName}>${keys[3]}}` })
+                            });
+                            oColumnWorkCenterText.data({ fieldName: keys[3] });
+                            oTable.addColumn(oColumnWorkCenterText);
+        
+                            var oColumnLanguage = new UIColumn({
+                                label: new Label({ text: columnLabels[4] }),
+                                template: new Text({ wrapping: false, text: `{${modelName}>${keys[4]}}` })
+                            });
+                            oColumnLanguage.data({ fieldName: keys[4] });
+                            oTable.addColumn(oColumnLanguage);
+                        }
+        
                     }
-
+        
                     // 모바일의 기본 테이블은 sap.m.Table
                     if (oTable.bindItems) {
+                        var cells = keys.map(function (key, index) {
+                            return new Label({ text: `{${modelName}>${key}}` });
+                        });
+        
                         oTable.bindAggregation("items", {
-                            path: "plantModel>/",
+                            path: `${modelName}/`,
                             template: new ColumnListItem({
-                                cells: [
-                                    new Label({ text: "{plantModel>Plant}" }),
-                                ]
+                                cells: cells
                             }),
                             events: {
                                 dataReceived: function () {
@@ -710,83 +781,122 @@ sap.ui.define([
                                 }
                             }
                         });
-                        oTable.addColumn(new MColumn({ header: new Label({ text: "플랜트" }) }));
+        
+                        columnLabels.forEach(function (label) {
+                            oTable.addColumn(new MColumn({ header: new Label({ text: label }) }));
+                        });
                     }
+        
                     oDialogSuggestions.update();
                 }.bind(this));
-
-                if (this.byId("VHPlant")) {
-                    this._oMultiInputWithSuggestions = this.byId("VHPlant");
+        
+                if (this.byId(inputId)) {
+                    this.oMultiInputSuggestion = this.byId(inputId);
                 } else {
-                    MessageBox.error("MultiInput의 ID 'VHPlant'를 찾을 수 없습니다.");
+                    MessageBox.error(`MultiInput의 ID '${inputId}'를 찾을 수 없습니다.`);
                 }
-
-                // _oMultiInputWithSuggestions가 올바르게 초기화된 경우에만 setTokens 호출
-                if (this._oMultiInputWithSuggestions) {
-                    oDialogSuggestions.setTokens(this._oMultiInputWithSuggestions.getTokens());
+        
+                if (this.oMultiInputSuggestion) {
+                    oDialogSuggestions.setTokens(this.oMultiInputSuggestion.getTokens());
                 }
-
+                // 데이터 속성으로 filterPaths 전달
+            oDialogSuggestions.data("filterPaths", filterPaths);
+            console.log("filterpa",filterPaths);
                 oDialogSuggestions.open();
             }.bind(this));
         },
-        onPlantOk: function (oEvent) {
+
+        onFilterVhOk: function (oEvent) {
 			var aTokens = oEvent.getParameter("tokens");
-			this._oMultiInputWithSuggestions.setTokens(aTokens);
-			this._oVHDWithSuggestions.close();
-		},
-		onPlantCancel: function () {
-			this._oVHDWithSuggestions.close();
-		},
-		onPlantSearch: function (oEvent) {
-			var sSearchQuery = this._oBasicSearchFieldWithSuggestions.getValue(),
-				aSelectionSet = oEvent.getParameter("selectionSet"),
-				aFilters = aSelectionSet && aSelectionSet.reduce(function (aResult, oControl) {
-				if (oControl.getValue()) {
-					aResult.push(new Filter({
-						path: oControl.getName(),
-						operator: FilterOperator.Contains,
-						value1: oControl.getValue()
-					}));
-				}
-
-				return aResult;
-			}, []);
-
-			aFilters.push(new Filter({
-				filters: [
-					new Filter({ path: "Plant", operator: FilterOperator.Contains, value1: sSearchQuery }),
-				],
-				and: false
-			}));
-
-			this._filterTableWithSuggestions(new Filter({
-				filters: aFilters,
-				and: true
-			}));
-		},
-		_filterTableWithSuggestions: function (oFilter) {
-			var oVHD = this._oVHDWithSuggestions;
-			oVHD.getTableAsync().then(function (oTable) {
-				if (oTable.bindRows) {
-					oTable.getBinding("rows").filter(oFilter);
-				}
-				if (oTable.bindItems) {
-					oTable.getBinding("items").filter(oFilter);
-				}
-				oVHD.update();
-			});
-		},
-		onPlantClose: function () {
-			this._oVHDWithSuggestions.destroy();
+			this.oMultiInputSuggestion.setTokens(aTokens);
+			this.vhdSuggestions.close();
 		},
 
-        onPlantSelected: function (oEvent) {
+		onFilterVhCancel: function () {
+			this.vhdSuggestions.close();
+		},        
+
+        onFilterVhClose: function () {
+			this.vhdSuggestions.destroy();
+		},
+
+        onFilterVhSearch: function (oEvent) {
+            // 데이터 속성에서 filterPaths 가져오기
+            var filterPaths = this.vhdSuggestions.data("filterPaths");
+        
+            // SearchField의 검색어와 선택된 필터들을 가져오기
+            var sSearchQuery = this.oSearchSuggestion.getValue();
+            var aSelectionSet = oEvent.getParameter("selectionSet");
+            
+            // 필터를 생성
+            var aFilters = aSelectionSet ? aSelectionSet.reduce(function (aResult, oControl) {
+                if (oControl.getValue()) {
+                    aResult.push(new Filter({
+                        path: oControl.getName(),
+                        operator: FilterOperator.Contains,
+                        value1: oControl.getValue()
+                    }));
+                }
+                return aResult;
+            }, []) : [];
+        
+            // 검색어를 기반으로 필터 추가
+            if (sSearchQuery) {
+                var searchFilters = filterPaths.map(function (path) {
+                    return new Filter({
+                        path: path,
+                        operator: FilterOperator.Contains,
+                        value1: sSearchQuery
+                    });
+                });
+                aFilters.push(new Filter({
+                    filters: searchFilters,
+                    and: false
+                }));
+            }
+        
+            // 필터 적용
+            var oVHD = this.vhdSuggestions;
+            oVHD.getTableAsync().then(function (oTable) {
+                if (oTable.bindRows) {
+                    oTable.getBinding("rows").filter(new Filter({
+                        filters: aFilters,
+                        and: true
+                    }));
+                }
+                if (oTable.bindItems) {
+                    oTable.getBinding("items").filter(new Filter({
+                        filters: aFilters,
+                        and: true
+                    }));
+                }
+                oVHD.update();
+            });
+        },        
+
+        // suggestion 선택 
+        onFilterVhSelected: function (oEvent) {
             var oMultiInput = oEvent.getSource();
             var oSelectedItem = oEvent.getParameter("selectedRow"); // 선택된 행 가져오기
+            var sValueHelpId = oMultiInput.getId();
+            console.log("svldld", sValueHelpId);
+            var contextModel ,contextProperty; 
+            if(sValueHelpId.includes("VHPlant")){
+                contextModel = "plantModel";
+                contextProperty = "Plant";
 
+            } else if(sValueHelpId.includes("VHOpCode")){
+                contextModel = "opiModel";
+                contextProperty = "OperationStandardTextCode";
+
+            } else if(sValueHelpId.includes("VHWC")){
+                contextModel = "wcModel";
+                contextProperty = "WorkCenter";
+
+            }
             if (oSelectedItem) {
-                var oContext = oSelectedItem.getBindingContext("plantModel");
-                var sKey = oContext.getProperty("Plant"); // 키 값 가져오기
+                var oContext = oSelectedItem.getBindingContext(contextModel);
+                var sKey = oContext.getProperty(contextProperty); // 키 값 가져오기
 
                 // 현재 MultiInput에 존재하는 토큰들을 가져오기
                 var aExistingTokens = oMultiInput.getTokens();
@@ -811,408 +921,30 @@ sap.ui.define([
                     oMultiInput.setValue("");
             }
         },
-        onPlantFocusOut: function (oEvent) {
-            var oMultiInput = this.byId("VHPlant");
-            
-            // 텍스트 필드를 지우기
-            oMultiInput.setValue("");
-        },
-        // 플랜트 끝
 
-         // value help 공정코드
-         onOpiValueHelp: function () {
-            // 초기화된 MultiInput 객체
-            this._oMultiInputWithSuggestions = new MultiInput();
-
-            this._oBasicSearchFieldWithSuggestions = new SearchField();
-
-            this.pDialogWithSuggestions = this.loadFragment({
-                name: "operation.view.Fragments.OperationIdFilter"
-            }).then(function (oDialogSuggestions) {
-                var oFilterBar = oDialogSuggestions.getFilterBar(),
-                    oColumnOperationid, oColumnOperationidText;
-                this._oVHDWithSuggestions = oDialogSuggestions;
-
-                this.getView().addDependent(oDialogSuggestions);
-
-                // 필터링을 위한 Key 필드 설정
-                oDialogSuggestions.setRangeKeyFields([{
-                    label: "공정코드",
-                    key: "OperationStandardTextCode",
-                    type: "string",
-                    typeInstance: new TypeString({}, {
-                        maxLength: 7
-                    })
-                }]);
-
-                // FilterBar의 기본 검색 설정
-                oFilterBar.setFilterBarExpanded(false);
-                oFilterBar.setBasicSearch(this._oBasicSearchFieldWithSuggestions);
-
-                // 기본 검색이 실행될 때 필터바 검색 트리거
-                this._oBasicSearchFieldWithSuggestions.attachSearch(function () {
-                    oFilterBar.search();
-                });
-
-                oDialogSuggestions.getTableAsync().then(function (oTable) {
-                    oTable.setModel(this.getOwnerComponent().getModel("opiModel"));
-
-                    // 데스크톱의 기본 테이블은 sap.ui.table.Table
-                    if (oTable.bindRows) {
-                        oTable.bindAggregation("rows", {
-                            path: "opiModel>/",
-                            events: {
-                                dataReceived: function () {
-                                    oDialogSuggestions.update();
-                                }
-                            }
-                        });
-                        oColumnOperationid = new UIColumn({
-                            label: new Label({ text: "공정코드" }),
-                            template: new Text({ wrapping: false, text: "{opiModel>OperationStandardTextCode}" })
-                        });
-                        oColumnOperationid.data({ fieldName: "OperationStandardTextCode" });
-                        oTable.addColumn(oColumnOperationid);
-
-                        oColumnOperationidText = new UIColumn({
-                            label: new Label({ text: "공정코드명" }),
-                            template: new Text({ wrapping: false, text: "{opiModel>OperationStandardTextCodeName}" })
-                        });
-                        oColumnOperationidText.data({ fieldName: "OperationStandardTextCodeName" });
-                        oTable.addColumn(oColumnOperationidText);
-                    }
-
-                    // 모바일의 기본 테이블은 sap.m.Table
-                    if (oTable.bindItems) {
-                        oTable.bindAggregation("items", {
-                            path: "opiModel>/",
-                            template: new ColumnListItem({
-                                cells: [
-                                    new Label({ text: "{opiModel>OperationStandardTextCode}" }),
-                                    new Label({ text: "{opiModel>OperationStandardTextCodeName}" })
-                                ]
-                            }),
-                            events: {
-                                dataReceived: function () {
-                                    oDialogSuggestions.update();
-                                }
-                            }
-                        });
-                        oTable.addColumn(new MColumn({ header: new Label({ text: "공정코드" }) }));
-                        oTable.addColumn(new MColumn({ header: new Label({ text: "공정코드명" }) }));
-                    }
-                    oDialogSuggestions.update();
-                }.bind(this));
-
-                if (this.byId("VHOpCode")) {
-                    this._oMultiInputWithSuggestions = this.byId("VHOpCode");
-                } else {
-                    MessageBox.error("MultiInput의 ID 'VHOpCode'를 찾을 수 없습니다.");
-                }
-
-                // _oMultiInputWithSuggestions가 올바르게 초기화된 경우에만 setTokens 호출
-                if (this._oMultiInputWithSuggestions) {
-                    oDialogSuggestions.setTokens(this._oMultiInputWithSuggestions.getTokens());
-                }
-
-                oDialogSuggestions.open();
-            }.bind(this));
-        },
+        // 포커스 아웃 이벤트 핸들러
+        onFilterVhFocusOut: function (oEvent) {
+            // jQuery 이벤트 객체로부터 ID 가져오기
+            var sId = oEvent.target.id;
         
-		onOpiOk: function (oEvent) {
-			var aTokens = oEvent.getParameter("tokens");
-			this._oMultiInputWithSuggestions.setTokens(aTokens);
-			this._oVHDWithSuggestions.close();
-		},
-		onOpiCancel: function () {
-			this._oVHDWithSuggestions.close();
-		},
-		onOpiSearch: function (oEvent) {
-			var sSearchQuery = this._oBasicSearchFieldWithSuggestions.getValue(),
-				aSelectionSet = oEvent.getParameter("selectionSet"),
-				aFilters = aSelectionSet && aSelectionSet.reduce(function (aResult, oControl) {
-				if (oControl.getValue()) {
-					aResult.push(new Filter({
-						path: oControl.getName(),
-						operator: FilterOperator.Contains,
-						value1: oControl.getValue()
-					}));
-				}
-
-				return aResult;
-			}, []);
-
-			aFilters.push(new Filter({
-				filters: [
-					new Filter({ path: "OperationStandardTextCode", operator: FilterOperator.Contains, value1: sSearchQuery }),
-					new Filter({ path: "OperationStandardTextCodeText", operator: FilterOperator.Contains, value1: sSearchQuery })
-				],
-				and: false
-			}));
-
-			this._filterTableWithSuggestions(new Filter({
-				filters: aFilters,
-				and: true
-			}));
-		},
-		
-		onOpiClose: function () {
-			this._oVHDWithSuggestions.destroy();
-		},
-
-        onOpiSelected: function (oEvent) {
-            var oMultiInput = oEvent.getSource();
-            var oSelectedItem = oEvent.getParameter("selectedRow"); // 선택된 행 가져오기
-
-            if (oSelectedItem) {
-                var oContext = oSelectedItem.getBindingContext("opiModel");
-                var sKey = oContext.getProperty("OperationStandardTextCode"); // 키 값 가져오기
-
-                // 현재 MultiInput에 존재하는 토큰들을 가져오기
-                var aExistingTokens = oMultiInput.getTokens();
-
-                // 중복된 토큰이 있는지 확인
-                var bTokenExists = aExistingTokens.some(function (oToken) {
-                    return oToken.getKey() === sKey;
-                });
-
-                // 중복된 토큰이 없을 경우에만 새 토큰을 추가
-                if (!bTokenExists) {
-                    oMultiInput.addToken(new Token({
-                        key: sKey,
-                        text: sKey
-                    }));
-                    
-                } else {
-
-                    // 중복된 토큰이 있는 경우, 사용자에게 메시지 표시 (선택 사항)
-                    MessageToast.show("이미 추가된 토큰입니다.");
-                }
-
-                // 입력 값을 지우기 (선택 후 텍스트 박스를 비움)
-                oMultiInput.setValue("");
+            // ID에 따라 적절한 MultiInput ID 선택
+            var inputId;
+            if (sId.includes("VHPlant")) {
+                inputId = "VHPlant";
+            } else if (sId.includes("VHOpCode")) {
+                inputId = "VHOpCode";
+            } else if (sId.includes("VHWC")) {
+                inputId = "VHWC";
             }
-        },
-
-        onOpiFocusOut: function (oEvent) {
-            var oMultiInput = this.byId("VHOpCode");
-            
-            // 텍스트 필드를 지우기
-            oMultiInput.setValue("");
-        },
-        // 공정코드 value help 끝
-
-        // 작업장 필터 valuehelp
-        onWcValueHelps: function () {
-            // 초기화된 MultiInput 객체
-            this._oWCSuggestion = new MultiInput();
-
-            this._oBasicSearchFieldWithSuggestions = new SearchField();
-
-            this.pDialogWithSuggestions = this.loadFragment({
-                name: "operation.view.Fragments.WorkCenterFilter"
-            }).then(function (oDialogSuggestions) {
-                var oFilterBar = oDialogSuggestions.getFilterBar(),
-                oColumnWorkCenterCategoryCode, oColumnPlant, oColumnWorkCenter, oColumnWorkCenterText, oColumnLanguage;
-                this._oVHDWithSuggestions = oDialogSuggestions;
-
-                this.getView().addDependent(oDialogSuggestions);
-
-                // 필터링을 위한 Key 필드 설정
-                oDialogSuggestions.setRangeKeyFields([{
-                    label: "작업장",
-                    key: "WorkCenter",
-                    type: "string",
-                    typeInstance: new TypeString({}, {
-                        maxLength: 7
-                    })
-                }]);
-
-                // FilterBar의 기본 검색 설정
-                oFilterBar.setFilterBarExpanded(false);
-                oFilterBar.setBasicSearch(this._oBasicSearchFieldWithSuggestions);
-
-                // 기본 검색이 실행될 때 필터바 검색 트리거
-                this._oBasicSearchFieldWithSuggestions.attachSearch(function () {
-                    oFilterBar.search();
-                });
-
-                oDialogSuggestions.getTableAsync().then(function (oTable) {
-                    oTable.setModel(this.getOwnerComponent().getModel("wcModel"));
-
-                    // 데스크톱의 기본 테이블은 sap.ui.table.Table
-                    if (oTable.bindRows) {
-                        oTable.bindAggregation("rows", {
-                            path: "wcModel>/",
-                            events: {
-                                dataReceived: function () {
-                                    oDialogSuggestions.update();
-                                }
-                            }
-                        });
-                        oColumnWorkCenterCategoryCode = new UIColumn({
-                            label: new Label({ text: "범주" }),
-                            template: new Text({ wrapping: false, text: "{wcModel>WorkCenterCategoryCode}" })
-                        });
-                        oColumnWorkCenterCategoryCode.data({ fieldName: "WorkCenterCategoryCode" });
-                        oTable.addColumn(oColumnWorkCenterCategoryCode);
-
-                        oColumnPlant = new UIColumn({
-                            label: new Label({ text: "플랜트" }),
-                            template: new Text({ wrapping: false, text: "{wcModel>Plant}" })
-                        });
-                        oColumnPlant.data({ fieldName: "Plant" });
-                        oTable.addColumn(oColumnPlant);
-
-                        oColumnWorkCenter = new UIColumn({
-                            label: new Label({ text: "작업장" }),
-                            template: new Text({ wrapping: false, text: "{wcModel>WorkCenter}" })
-                        });
-                        oColumnWorkCenter.data({ fieldName: "WorkCenter" });
-                        oTable.addColumn(oColumnWorkCenter);
-
-                        oColumnWorkCenterText = new UIColumn({
-                            label: new Label({ text: "작업장명" }),
-                            template: new Text({ wrapping: false, text: "{wcModel>WorkCenterText}" })
-                        });
-                        oColumnWorkCenterText.data({ fieldName: "WorkCenterText" });
-                        oTable.addColumn(oColumnWorkCenterText);
-
-                        oColumnLanguage = new UIColumn({
-                            label: new Label({ text: "언어" }),
-                            template: new Text({ wrapping: false, text: "{wcModel>Language}" })
-                        });
-                        oColumnLanguage.data({ fieldName: "Language" });
-                        oTable.addColumn(oColumnLanguage);
-                    }
-
-                    // 모바일의 기본 테이블은 sap.m.Table
-                    if (oTable.bindItems) {
-                        oTable.bindAggregation("items", {
-                            path: "wcModel>/",
-                            template: new ColumnListItem({
-                                cells: [
-                                    new Label({ text: "{wcModel>WorkCenterCategoryCode}" }),
-                                    new Label({ text: "{wcModel>Plant}" }),
-                                    new Label({ text: "{wcModel>WorkCenter}" }),
-                                    new Label({ text: "{wcModel>WorkCenterText}" }),
-                                    new Label({ text: "{wcModel>Language}" }),
-                                ]
-                            }),
-                            events: {
-                                dataReceived: function () {
-                                    oDialogSuggestions.update();
-                                }
-                            }
-                        });
-                        oTable.addColumn(new MColumn({ header: new Label({ text: "범주" }) }));
-                        oTable.addColumn(new MColumn({ header: new Label({ text: "플랜트" }) }));
-                        oTable.addColumn(new MColumn({ header: new Label({ text: "작업장" }) }));
-                        oTable.addColumn(new MColumn({ header: new Label({ text: "작업장명" }) }));
-                        oTable.addColumn(new MColumn({ header: new Label({ text: "언어" }) }));
-                    }
-                    oDialogSuggestions.update();
-                }.bind(this));
-
-                if (this.byId("VHWC")) {
-                    this._oMultiInputWithSuggestions = this.byId("VHWC");
-                } else {
-                    MessageBox.error("MultiInput의 ID 'VHWC'를 찾을 수 없습니다.");
-                }
-
-                // _oMultiInputWithSuggestions가 올바르게 초기화된 경우에만 setTokens 호출
-                if (this._oMultiInputWithSuggestions) {
-                    oDialogSuggestions.setTokens(this._oMultiInputWithSuggestions.getTokens());
-                }
-
-                oDialogSuggestions.open();
-            }.bind(this));
-        },
         
-		onWcOk: function (oEvent) {
-			var aTokens = oEvent.getParameter("tokens");
-			this._oMultiInputWithSuggestions.setTokens(aTokens);
-			this._oVHDWithSuggestions.close();
-		},
-		onWcCancel: function () {
-			this._oVHDWithSuggestions.close();
-		},
-		onWcSearch: function (oEvent) {
-			var sSearchQuery = this._oBasicSearchFieldWithSuggestions.getValue(),
-				aSelectionSet = oEvent.getParameter("selectionSet"),
-				aFilters = aSelectionSet && aSelectionSet.reduce(function (aResult, oControl) {
-				if (oControl.getValue()) {
-					aResult.push(new Filter({
-						path: oControl.getName(),
-						operator: FilterOperator.Contains,
-						value1: oControl.getValue()
-					}));
-				}
-
-				return aResult;
-			}, []);
-
-			aFilters.push(new Filter({
-				filters: [
-					new Filter({ path: "WorkCenterCategoryCode", operator: FilterOperator.Contains, value1: sSearchQuery }),
-					new Filter({ path: "Plant", operator: FilterOperator.Contains, value1: sSearchQuery }),
-                    new Filter({ path: "WorkCenter", operator: FilterOperator.Contains, value1: sSearchQuery }),
-					new Filter({ path: "WorkCenterText", operator: FilterOperator.Contains, value1: sSearchQuery }),
-                    new Filter({ path: "Language", operator: FilterOperator.Contains, value1: sSearchQuery })
-				],
-				and: false
-			}));
-
-			this._filterTableWithSuggestions(new Filter({
-				filters: aFilters,
-				and: true
-			}));
-		},
-		
-		onWcClose: function () {
-			this._oVHDWithSuggestions.destroy();
-		},
-
-        onWcSelected: function (oEvent) {
-            var oMultiInput = oEvent.getSource();
-            var oSelectedItem = oEvent.getParameter("selectedRow"); // 선택된 행 가져오기
-
-            if (oSelectedItem) {
-                var oContext = oSelectedItem.getBindingContext("wcModel");
-                var sKey = oContext.getProperty("WorkCenter"); // 키 값 가져오기
-
-                // 현재 MultiInput에 존재하는 토큰들을 가져오기
-                var aExistingTokens = oMultiInput.getTokens();
-
-                // 중복된 토큰이 있는지 확인
-                var bTokenExists = aExistingTokens.some(function (oToken) {
-                    return oToken.getKey() === sKey;
-                });
-
-                // 중복된 토큰이 없을 경우에만 새 토큰을 추가
-                if (!bTokenExists) {
-                    oMultiInput.addToken(new Token({
-                        key: sKey,
-                        text: sKey
-                    }));
-
-                } else {
-                    // 중복된 토큰이 있는 경우, 사용자에게 메시지 표시 (선택 사항)
-                    MessageToast.show("이미 추가된 토큰입니다.");
-                }
-
-                // 입력 값을 지우기 (선택 후 텍스트 박스를 비움)
-                oMultiInput.setValue("");
-            }
-        },
-
-        onWcFocusOut: function (oEvent) {
-            var oMultiInput = this.byId("VHWC");
-            
+            // 해당 ID의 MultiInput 인스턴스 가져오기
+            var oMultiInput = this.byId(inputId);
+            if(oMultiInput){
             // 텍스트 필드를 지우기
             oMultiInput.setValue("");
-        },
-                // value help 끝
+            }
+        },        
+        // value help 끝
 
          // MultiInput 초기화 및 토큰 설정
          MultiInputs: function (sMultiInputId, setDefaultTokens) {
