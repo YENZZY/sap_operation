@@ -533,36 +533,73 @@ sap.ui.define([
 
             this._currentDialog = null; // 다이얼로그 정보 초기화
         },
-
-        // 테이블 Value Help 입력 시 자동으로 값 업데이트
+        
         onTableVhLiveChange: function (oEvent) {
-            var oInput = oEvent.getSource(); // 현재 입력 필드
-            var sValue = oInput.getValue(); // 입력된 값
+            var oInput = oEvent.getSource();
+            var sValue = oInput.getValue();
             var oInputId = oInput.getId();
-           
-            if(oInputId.includes("operationid")){
-                var sModelName = "opiModel"
-                var sValueProperty = "OperationStandardTextCode"
-                var sTextProperty = "OperationStandardTextCodeName"
-                var sTableText = "operationidtext"
-          
-            } else if (oInputId.includes("workcenter")){
-                var sModelName = "wcModel"
-                var sValueProperty = "WorkCenter"
-                var sTextProperty = "WorkCenterText"
-                var sTableText = "workcentertext"
-            }
-
-            var oModel = this.getModel(sModelName);
-            var aData = oModel.getData();
+            
+            var oSettings = this.getModelSettings(oInputId);
+            var oTableRow = oInput.getParent();
             var oDataModel = this.getModel("dataModel");
-            var oTableRow = oInput.getParent(); // 현재 행
-            var cellIndex = oTableRow.indexOfCell(oInput); // 입력 필드의 셀 인덱스
+        
+            this.updateTableValueAndText(oSettings, sValue, oTableRow, oInput);
+        
+            // 데이터 모델 업데이트
+            oDataModel.updateBindings(); // UI와 데이터 모델 동기화
+        },
+        
+        onTableVhSelected: function (oEvent) {
+            var oInput = oEvent.getSource();
+            var oInputId = oInput.getId();
+            var oSelectedItem = oEvent.getParameter("selectedItem");
+            
+            var oSettings = this.getModelSettings(oInputId);
+            var oTableRow = oInput.getParent();
+            var oDataModel = this.getModel("dataModel");
+        
+            if (oSelectedItem) {
+                var sValue = oSelectedItem.getKey();
+                this.updateTableValueAndText(oSettings, sValue, oTableRow, oInput);
+            } else {
+                oInput.setValueState(ValueState.None); // 상태 초기화
+                oInput.setValueStateText(""); // 상태 텍스트 초기화
+            }
+        
+            // 데이터 모델 업데이트
+            oDataModel.updateBindings(); // UI와 데이터 모델 동기화
+        },
+        
+        // 공정코드 및 작업장 model 데이터
+        getModelSettings: function (sInputId) {
+            if (sInputId.includes("operationid")) {
+                return {
+                    sModelName: "opiModel",
+                    sValueProperty: "OperationStandardTextCode",
+                    sTextProperty: "OperationStandardTextCodeName",
+                    sTableText: "operationidtext"
+                };
+            } else if (sInputId.includes("workcenter")) {
+                return {
+                    sModelName: "wcModel",
+                    sValueProperty: "WorkCenter",
+                    sTextProperty: "WorkCenterText",
+                    sTableText: "workcentertext"
+                };
+            }
+        },
+        
+        // 해당 공정 코드 (작업장) 명으로 업데이트
+        updateTableValueAndText: function (oSettings, sValue, oTableRow, oInput) {
+            var oModel = this.getModel(oSettings.sModelName);
+            var aData = oModel.getData();
+            
+            var cellIndex = oTableRow.indexOfCell(oInput);
             var oTableCell = oTableRow.getCells()[cellIndex];
             var oTextCell = oTableRow.getCells().find(function (item) {
-                return item instanceof Text && item.getId().includes(sTableText); // 텍스트 셀 찾기
+                return item instanceof Text && item.getId().includes(oSettings.sTableText);
             });
-
+        
             if (sValue === "") { // 빈 문자열인 경우
                 oTableCell.setValue(""); // 값 초기화
                 if (oTextCell) {
@@ -570,22 +607,19 @@ sap.ui.define([
                 }
                 oInput.setValueState(ValueState.None); // 상태 초기화
                 oInput.setValueStateText(""); // 상태 텍스트 초기화
-            
             } else {
-                // 입력된 값과 일치하는 항목 찾기
                 var oMatch = aData.find(function (item) {
-                    return item[sValueProperty] === sValue;
+                    return item[oSettings.sValueProperty] === sValue;
                 });
-
+        
                 if (oMatch) {
-                    var sText = oMatch[sTextProperty]; // 텍스트
+                    var sText = oMatch[oSettings.sTextProperty]; // 텍스트
                     oTableCell.setValue(sValue); // 값 업데이트
                     if (oTextCell) {
                         oTextCell.setText(sText); // 텍스트 업데이트
                     }
                     oInput.setValueState(ValueState.None); // 상태 초기화
                     oInput.setValueStateText(""); // 상태 텍스트 초기화
-
                 } else {
                     if (oTextCell) {
                         oTextCell.setText(""); // 텍스트 초기화
@@ -594,67 +628,7 @@ sap.ui.define([
                     oInput.setValueStateText("유효하지 않은 값입니다."); // 오류 메시지
                 }
             }
-            
-            // 데이터 모델 업데이트
-            oDataModel.updateBindings(); // UI와 데이터 모델 동기화
-        },
-
-        // suggestion에서 값 선택 시 자동 변환
-        onTableVhSelected: function (oEvent) {
-            var oInput = oEvent.getSource(); // 현재 입력 필드
-            var oInputId = oInput.getId();
-            var oSelectedItem = oEvent.getParameter("selectedItem");
-
-            if(oInputId.includes("operationid")){
-                var sModelName = "opiModel"
-                var sValueProperty = "OperationStandardTextCode"
-                var sTextProperty = "OperationStandardTextCodeName"
-                var sTableText = "operationidtext"
-          
-            } else if (oInputId.includes("workcenter")){
-                var sModelName = "wcModel"
-                var sValueProperty = "WorkCenter"
-                var sTextProperty = "WorkCenterText"
-                var sTableText = "workcentertext"
-            }
-            var oModel = this.getModel(sModelName);
-            var aData = oModel.getData();
-            var oDataModel = this.getModel("dataModel");
-            
-            var oTableRow = oInput.getParent(); // 현재 행
-            var cellIndex = oTableRow.indexOfCell(oInput); // 입력 필드의 셀 인덱스
-            var oTableCell = oTableRow.getCells()[cellIndex];
-            var oTextCell = oTableRow.getCells().find(function (item) {
-                return item instanceof Text && item.getId().includes(sTableText); // 텍스트 셀 찾기
-            });
-
-            if (oSelectedItem) {
-                var sValue = oSelectedItem.getKey(); // 선택된 값
-
-                var oMatch = aData.find(function (item) {
-                    return item[sValueProperty] === sValue;
-                });
-
-                if (oMatch) {
-                    var sText = oMatch[sTextProperty]; // 텍스트
-                    oTableCell.setValue(sValue); // 값 업데이트
-                    if (oTextCell) {
-                        oTextCell.setText(sText); // 텍스트 설정
-                    }
-                    oDataModel.updateBindings(); // 데이터 모델 업데이트
-                    oInput.setValueState(ValueState.None); // 상태 초기화
-                    oInput.setValueStateText(""); // 상태 텍스트 초기화
-
-                } else {
-                    oInput.setValueState(ValueState.Error); // 상태 오류
-                    oInput.setValueStateText("유효하지 않은 값입니다."); // 오류 메시지
-                }
-            } else {
-                // 선택된 항목이 없는 경우 입력 필드를 초기화
-                oInput.setValueState(ValueState.None); // 상태 초기화
-                oInput.setValueStateText(""); // 상태 텍스트 초기화
-            }
-        },
+        },        
 
         // 테이블 Value Help 검색
         onTableVhSearch: function (oEvent) {
