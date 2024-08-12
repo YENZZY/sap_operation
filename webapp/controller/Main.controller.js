@@ -3,8 +3,6 @@ sap.ui.define([
     'sap/ui/model/json/JSONModel',
     'sap/m/MessageBox',
     'sap/m/MessageToast',
-    'sap/ui/comp/valuehelpdialog/ValueHelpDialog',
-    "sap/ui/core/CustomData",
     'sap/ui/core/library',
     'sap/m/SearchField',
     'sap/m/MultiInput',
@@ -36,7 +34,7 @@ sap.ui.define([
     'operation/js/jszip'
 ], function (Controller,
      JSONModel,
-     MessageBox, MessageToast, ValueHelpDialog, CustomData, coreLibrary, SearchField, MultiInput, TypeString, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Input, library, SuggestionItem, Spreadsheet, Fragment, ValueState, PersonalizableInfo, Engine, SelectionController, SortController, GroupController, MetadataHelper, Sorter, ColumnWidthController) {
+     MessageBox, MessageToast, coreLibrary, SearchField, MultiInput, TypeString, Token, Filter, FilterOperator, exportLibrary, ColumnListItem, Label, MColumn, UIColumn, Text, Input, library, SuggestionItem, Spreadsheet, Fragment, ValueState, PersonalizableInfo, Engine, SelectionController, SortController, GroupController, MetadataHelper, Sorter, ColumnWidthController) {
     "use strict";
 
     var EdmType = exportLibrary.EdmType;
@@ -491,8 +489,6 @@ sap.ui.define([
                     var cellIndex = this.oRow.indexOfCell(this.oCell);
                     var oTableCell = this.oRow.getCells()[cellIndex];
                     var oTextCell = this.oRow.getCells().find(function (item) {
-                        var itemid = item.getId();
-                        console.log("itemid",itemid);
                         return item instanceof Text && item.getId().includes(stableText);
                     });
 
@@ -626,8 +622,6 @@ sap.ui.define([
             // ValueHelpDialog의 ID에 따라 변수를 설정
             var sValueHelpId = oEvent.getSource().getId();
             var filterName, label, keys, modelName, columnLabels, inputId, filterPaths;
-        
-            console.log("svi", sValueHelpId);
         
             // ID에 따라 조건을 설정
             if (sValueHelpId.includes("VHPlant")) {
@@ -802,7 +796,6 @@ sap.ui.define([
                 }
                 // 데이터 속성으로 filterPaths 전달
             oDialogSuggestions.data("filterPaths", filterPaths);
-            console.log("filterpa",filterPaths);
                 oDialogSuggestions.open();
             }.bind(this));
         },
@@ -881,7 +874,6 @@ sap.ui.define([
             var oMultiInput = oEvent.getSource();
             var oSelectedItem = oEvent.getParameter("selectedRow"); // 선택된 행 가져오기
             var sValueHelpId = oMultiInput.getId();
-            console.log("svldld", sValueHelpId);
             var contextModel ,contextProperty; 
             if(sValueHelpId.includes("VHPlant")){
                 contextModel = "plantModel";
@@ -1069,7 +1061,6 @@ sap.ui.define([
                 var oContext = oItem.getBindingContext("dataModel");
                 var oRowData = oContext.getObject();
                 this.aItemsToDelete.push(oRowData);
-                console.log(oRowData);
             }.bind(this));
 
             // 선택된 항목을 모델 데이터에서 제거
@@ -1219,7 +1210,6 @@ sap.ui.define([
         
                     workbook.SheetNames.forEach(function (sheetName) {
                         var excelData = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
-                        console.log(excelData);
         
                         // Plant 값을 가져오기
                         this._getODataRead(oMainModel, "/Plant").done(function (aPlantData) {
@@ -1234,8 +1224,6 @@ sap.ui.define([
                                 };
                             });
         
-                            console.log("fd",filteredData);
-
                             // 공정코드와 작업장 모델 데이터를 가져오기
                             var opiModel = this.getModel("opiModel").getData();
                             var wcModel = this.getModel("wcModel").getData();
@@ -1248,7 +1236,6 @@ sap.ui.define([
                             var aFilteredData = filteredData.filter(function (item) {
                                 return validOperationIds.includes(item.Operationid) && validWorkcenters.includes(item.Workcenter);
                             });
-                            console.log("aF",aFilteredData);
 
                             // 유효성 검사 실패한 데이터가 있는지 확인
                             var invalidData = filteredData.filter(function (item) {
@@ -1283,7 +1270,6 @@ sap.ui.define([
                                         return filterItem.Operationid === item.Operationid &&
                                                filterItem.Workcenter === item.Workcenter;
                                     });
-                                    console.log("existsInFilterOpi", existsInFilterOpi);
                                     if (!existsInFilterOpi) {
                                         saveData.push({
                                             Operationid: item.Operationid,
@@ -1357,7 +1343,7 @@ sap.ui.define([
 					path: "dataModel>WorkcenterText"
 				}
 			]);
-            console.log("this.omh",this.oMetadataHelper);
+
             Engine.getInstance().register(oTable, {
                 helper: this.oMetadataHelper,
                 controller: {
