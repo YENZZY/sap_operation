@@ -411,7 +411,7 @@ sap.ui.define([
         
             // 뷰에서 모든 Input 필드를 찾음
             var inputs = oView.findAggregatedObjects(true, function (oControl) { // findAggregatedObjects 메소드를 사용하여 현재 뷰 내에 있는 모든 sap.m.Input 컨트롤을 찾기. 뷰와 그 하위 컨트롤들을 재귀적으로 검색하여 조건에 맞는 컨트롤들을 반환
-                return oControl.isA("sap.m.Input"); // oControl.isA("sap.m.Input")는 각 컨트롤이 sap.m.Input 인스턴스인지 확인하는 조건
+                return oControl.isA("Input"); // oControl.isA("Input")는 각 컨트롤이 sap.m.Input 인스턴스인지 확인하는 조건
             });
         
             // 각 Input 필드의 유효성 상태를 리셋
@@ -459,6 +459,7 @@ sap.ui.define([
                 }).then(function(oValueHelpDialog) {
                     oView.addDependent(oValueHelpDialog);
                     oValueHelpDialog.open();
+                    
                     // 다이얼로그 인스턴스를 저장
                     this._currentDialog = {
                         dialog: oValueHelpDialog,
@@ -490,6 +491,8 @@ sap.ui.define([
                     var cellIndex = this.oRow.indexOfCell(this.oCell);
                     var oTableCell = this.oRow.getCells()[cellIndex];
                     var oTextCell = this.oRow.getCells().find(function (item) {
+                        var itemid = item.getId();
+                        console.log("itemid",itemid);
                         return item instanceof Text && item.getId().includes(stableText);
                     });
 
@@ -500,11 +503,9 @@ sap.ui.define([
                         }
                     }
                 }
-
                 // 데이터 모델 업데이트
                 this.getModel("dataModel").updateBindings(true);
             }
-
             // 필터 초기화
             oEvent.getSource().getBinding("items").filter([]);
 
@@ -809,6 +810,7 @@ sap.ui.define([
         onFilterVhOk: function (oEvent) {
 			var aTokens = oEvent.getParameter("tokens");
 			this.oMultiInputSuggestion.setTokens(aTokens);
+            this.oSmartVariantManagement.currentVariantSetModified(true); //standard *
 			this.vhdSuggestions.close();
 		},
 
@@ -1383,81 +1385,6 @@ sap.ui.define([
         },
 
         // handleStateChange 함수는 개인화 상태가 변경될 때 호출, 변경된 상태를 반영하여 테이블을 업데이트
-        // handleStateChange: function(oEvt) {
-        //     const oTable = this.byId("dataTable");
-        //     const oState = oEvt.getParameter("state");
-        
-        //     if (!oState) {
-        //         return;
-        //     }
-        
-        //     // Update columns based on state
-        //     this.updateColumns(oState);
-        
-        //     // Create filters and sorters
-        //     const aGroups = this.createGroups(oState);
-        //     const aSorter = this.createSorters(oState, aGroups);
-        
-        //     // Create new cell templates
-        //     const aCells = oState.Columns.map(function(oColumnState) {
-        //         const sPath = this.oMetadataHelper.getProperty(oColumnState.key).path;
-        
-        //         if (oColumnState.key === "operationid_col") {
-        //             return new Input({
-        //                 id: "operationid" + jQuery.now(), // ID 재생성
-        //                 value: "{" + sPath + "}",
-        //                 type: InputType.Text, 
-        //                 showValueHelp: true,
-        //                 valueHelpRequest: this.onTableVh.bind(this),
-        //                 suggestionItemSelected: this.onTableVhSelected.bind(this),
-        //                 showSuggestion: true,
-        //                 suggestionItems: {
-        //                     path: 'opiModel>/',
-        //                     templateShareable: false,
-        //                     template: new SuggestionItem({
-        //                         text: "{opiModel>OperationStandardTextCode}",
-        //                         key: "{opiModel>OperationStandardTextCode}"
-        //                     })
-        //                 },
-        //                 liveChange: this.onTableVhLiveChange.bind(this)
-        //             });
-        //         } else if (oColumnState.key === "workcenter_col") {
-        //             return new Input({
-        //                 id: "workcenter" + jQuery.now(), // ID 재생성
-        //                 value: "{" + sPath + "}",
-        //                 type: InputType.Text,
-        //                 showValueHelp: true,
-        //                 valueHelpRequest: this.onTableVh.bind(this),
-        //                 suggestionItemSelected: this.onTableVhSelected.bind(this),
-        //                 showSuggestion: true,
-        //                 suggestionItems: {
-        //                     path: 'wcModel>/',
-        //                     templateShareable: false,
-        //                     template: new SuggestionItem({
-        //                         text: "{wcModel>WorkCenter}",
-        //                         key: "{wcModel>WorkCenter}"
-        //                     })
-        //                 },
-        //                 liveChange: this.onTableVhLiveChange.bind(this)
-        //             });
-        //         } else {
-        //             return new Text({
-        //                 text: "{" + sPath + "}"
-        //             });
-        //         }
-        //     }.bind(this));
-        
-        //     // Re-bind table items with updated template
-        //     oTable.bindItems({
-        //         templateShareable: false,
-        //         path: 'dataModel>/items',
-        //         sorter: aSorter.concat(aGroups),
-        //         template: new ColumnListItem({
-        //             cells: aCells
-        //         })
-        //     });
-        // },     
-        
         handleStateChange: function(oEvt) {
             const oTable = this.byId("dataTable");
             const oState = oEvt.getParameter("state");
@@ -1466,63 +1393,75 @@ sap.ui.define([
                 return;
             }
         
-            // 현재 열과 데이터 상태 저장
-            const aColumns = oTable.getColumns();
-            const aColumnData = {}; // 열 데이터를 저장할 객체
+            // 상태에 따라 열을 업데이트
+            this.updateColumns(oState);
         
-            // 1. 열 데이터 저장
-            oTable.getItems().forEach(oItem => {
-                const aCells = oItem.getCells();
-                aColumns.forEach((oColumn, index) => {
-                    const sColumnId = oColumn.getId();
-                    console.log("scolumid",sColumnId);
-                    const oCell = aCells[index];
-                    console.log("ocell",oCell);
-                    const sPath = oCell.getBindingPath();
-                    console.log("spath",sPath);
-
-                    const sValue = oItem.getBindingContext().getProperty(sPath);
-                    console.log("svalue",sValue);
-                    if (!aColumnData[sColumnId]) {
-                        aColumnData[sColumnId] = [];
-                    }
-                    aColumnData[sColumnId].push(sValue);
-                });
-            });
+            // 필터와 정렬기를 생성
+            const aGroups = this.createGroups(oState);
+            const aSorter = this.createSorters(oState, aGroups);
         
-            // 2. 기존 열 순서 제거
-            aColumns.forEach(oColumn => oTable.removeColumn(oColumn));
+            // 새로운 셀 템플릿을 생성
+            const aCells = oState.Columns.map(function(oColumnState) {
+                const sPath = this.oMetadataHelper.getProperty(oColumnState.key).path;
         
-            // 3. 새 열 순서 생성
-            const aSortedColumns = oState.Columns.map(oColumnState => {
-                return aColumns.find(oColumn => oColumn.getId() === oColumnState.key);
-            }).filter(oColumn => oColumn);
+                if (oColumnState.key === "operationid_col") {
+                    return new Input({
+                        id: "operationid" + jQuery.now(), // ID를 재생성
+                        value: "{" + sPath + "}",
+                        type: InputType.Text, 
+                        showValueHelp: true,
+                        valueHelpRequest: this.onTableVh.bind(this),
+                        suggestionItemSelected: this.onTableVhSelected.bind(this),
+                        showSuggestion: true,
+                        suggestionItems: {
+                            path: 'opiModel>/',
+                            templateShareable: false,
+                            template: new SuggestionItem({
+                                text: "{opiModel>OperationStandardTextCode}",
+                                key: "{opiModel>OperationStandardTextCode}"
+                            })
+                        },
+                        liveChange: this.onTableVhLiveChange.bind(this)
+                    });
+                } else if (oColumnState.key === "workcenter_col") {
+                    return new Input({
+                        id: "workcenter" + jQuery.now(), // ID를 재생성
+                        value: "{" + sPath + "}",
+                        type: InputType.Text,
+                        showValueHelp: true,
+                        valueHelpRequest: this.onTableVh.bind(this),
+                        suggestionItemSelected: this.onTableVhSelected.bind(this),
+                        showSuggestion: true,
+                        suggestionItems: {
+                            path: 'wcModel>/',
+                            templateShareable: false,
+                            template: new SuggestionItem({
+                                text: "{wcModel>WorkCenter}",
+                                key: "{wcModel>WorkCenter}"
+                            })
+                        },
+                        liveChange: this.onTableVhLiveChange.bind(this)
+                    });
+                } else if (oColumnState.key === "plant_col" || oColumnState.key === "operationidText_col" || oColumnState.key === "workcenterText_col"){
         
-            // 4. 새 열 순서로 열 추가 및 데이터 재배치
-            aSortedColumns.forEach((oColumn, index) => {
-                oTable.addColumn(oColumn);
-        
-                // 해당 열의 데이터를 재배치
-                const sColumnId = oColumn.getId();
-                if (aColumnData[sColumnId]) {
-                    oTable.getItems().forEach((oItem, rowIndex) => {
-                        const oCell = oItem.getCells()[index];
-                        if (oCell && oCell.setValue) {
-                            oCell.setValue(aColumnData[sColumnId][rowIndex]);
-                        }
+                    return new Text({
+                        id: (oColumnState.key.split("_col")[0]).toLowerCase() + jQuery.now(),
+                        text: "{" + sPath + "}"
                     });
                 }
-            });
+            }.bind(this));
         
-            // 테이블 항목 바인딩 업데이트
+            // 업데이트된 템플릿으로 테이블 항목을 다시 바인딩합니다.
             oTable.bindItems({
                 templateShareable: false,
                 path: 'dataModel>/items',
-                sorter: this.createSorters(oState),
-                template: oTable.getBindingInfo("items").template // 기존 템플릿 재사용
+                sorter: aSorter.concat(aGroups),
+                template: new ColumnListItem({
+                    cells: aCells
+                })
             });
-        },        
-
+        },          
+        
          //createSorters 함수는 현재 상태를 기반으로 정렬 생성
         createSorters: function(oState, aExistingSorter) {
             const aSorter = aExistingSorter || [];
