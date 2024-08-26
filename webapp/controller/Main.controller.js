@@ -244,6 +244,8 @@ sap.ui.define([
 
         // 필터 검색
         onSearch: function () {
+            var oTable = this.byId("dataTable");
+            oTable.setShowOverlay(false); //검색할때 테이블 비활성화
             var aPlantTokens = this.byId("VHPlant").getTokens().map(function (token) {
                 return token.getKey();
             });
@@ -253,9 +255,7 @@ sap.ui.define([
             var aWCTokens = this.byId("VHWC").getTokens().map(function (token) {
                 return token.getKey();
             });
-        
-        
-            var oTable = this.byId("dataTable");
+            
             if (!oTable) {
                 MessageBox.error("테이블을 찾을 수가 없습니다.");
                 return;
@@ -804,6 +804,8 @@ sap.ui.define([
 			var aTokens = oEvent.getParameter("tokens");
 			this.oMultiInputSuggestion.setTokens(aTokens);
             this.oSmartVariantManagement.currentVariantSetModified(true); //standard *
+            var oTable = this.byId("dataTable");
+            oTable.setShowOverlay(true);
 			this.vhdSuggestions.close();
 		},
 
@@ -871,6 +873,8 @@ sap.ui.define([
 
         // suggestion 선택 
         onFilterVhSelected: function (oEvent) {
+            var oTable = this.byId("dataTable");
+            oTable.setShowOverlay(true);
             var oMultiInput = oEvent.getSource();
             var oSelectedItem = oEvent.getParameter("selectedRow"); // 선택된 행 가져오기
             var sValueHelpId = oMultiInput.getId();
@@ -910,7 +914,6 @@ sap.ui.define([
                         // 중복된 토큰이 있는 경우, 사용자에게 메시지 표시 (선택 사항)
                         MessageToast.show("이미 추가된 토큰입니다.");
                     }
-
                     // 입력 값을 지우기 (선택 후 텍스트 박스를 비움)
                     oMultiInput.setValue("");
             }
